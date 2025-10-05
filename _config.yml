@@ -1,0 +1,4 @@
+title: Seithx’s Dev Notes
+description: Human, short, steady progress.
+remote_theme: pages-themes/minimal@v0.2.0
+plugins: [jekyll-feed]
