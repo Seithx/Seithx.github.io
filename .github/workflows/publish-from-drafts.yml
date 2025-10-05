@@ -94,11 +94,19 @@ jobs:
           body_md=$(echo "$text" | sed '1{/^# /d;}')
 
           # Write post
-          outfile="_posts/${today}-${slug}.md"
-          printf "%s\n%s\n" \
-            "---\nlayout: post\ntitle: \"$title\"\ndate: $today\n---" \
-            "$body_md" \
-            > "$outfile"
+          # Normalize the title a bit (straight quotes, no weird dashes)
+title=$(echo "$title" | sed 's/[“”]/"/g; s/[’]/'\''/g; s/—/-/g')
+
+outfile="_posts/${today}-${slug}.md"
+cat > "$outfile" <<EOF
+---
+layout: post
+title: "$title"
+date: $today
+---
+$body_md
+EOF
+echo "Wrote $outfile"
 
           echo "Wrote $outfile"
           echo "outfile=$outfile" >> $GITHUB_OUTPUT
