@@ -9,12 +9,21 @@ on:
 permissions:
   contents: write
 
+# Prevent overlapping runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0              # allow rebase
+          persist-credentials: true   # keep GITHUB_TOKEN for push
 
       - name: Find latest draft
         id: draft
@@ -119,8 +128,16 @@ jobs:
       - name: Commit & push
         if: steps.draft.outputs.skip != 'true'
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add _posts archived_drafts
-          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}"
+          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}" || echo "Nothing to commit"
+
+          # Rebase onto latest remote changes before pushing
+          git pull --rebase origin main || {
+            echo "Rebase failed; doing a regular merge"
+            git pull --no-rebase --no-edit origin main
+          }
           git push
