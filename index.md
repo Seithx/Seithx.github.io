@@ -1,6 +1,13 @@
-# Asaf’s Dev Notes
+---
+layout: default
+title: Seithx’s Dev Notes
+---
+
+# Seithx’s Dev Notes
 A light, human log of learning. New posts twice a week.
 
+<ul>
 {% for post in site.posts %}
-- [{{ post.title }}]({{ post.url }}) — {{ post.date | date: "%b %d, %Y" }}
+  <li><a href="{{ post.url | relative_url }}">{{ post.title }}</a> — {{ post.date | date: "%b %d, %Y" }}</li>
 {% endfor %}
+</ul>
