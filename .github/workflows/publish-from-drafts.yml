@@ -1,0 +1,93 @@
+name: Publish cleaned blog post from drafts (Gemini 2.5 Pro)
+
+on:
+  schedule:
+    - cron: "0 6 * * 2"   # Tue 09:00 Asia/Jerusalem = 06:00 UTC
+    - cron: "0 6 * * 5"   # Fri 09:00 Asia/Jerusalem = 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find latest draft
+        id: draft
+        run: |
+          set -e
+          if [ -z "$(ls -A drafts 2>/dev/null)" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          latest="$(ls -1t drafts | head -n 1)"
+          echo "file=$latest" >> $GITHUB_OUTPUT
+
+      - name: Stop if no draft
+        if: steps.draft.outputs.skip == 'true'
+        run: echo "No drafts to publish."
+
+      - name: Read draft contents
+        id: read
+        if: steps.draft.outputs.skip != 'true'
+        run: jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > draft.json
+
+      - name: Generate polished post with Gemini 2.5 Pro
+        if: steps.draft.outputs.skip != 'true'
+        id: llm
+        env:
+          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}   # your repo secret
+        run: |
+          set -e
+          today=$(date -u +"%Y-%m-%d")
+          raw=$(cat draft.json)
+
+          body=$(jq -n --arg raw "$raw" '{
+            contents: [
+              {parts: [{text: "You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn the raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom."}]},
+              {parts: [{text: ("RAW NOTES:\n" + ($raw | fromjson))}]}
+            ],
+            generationConfig: {temperature: 0.6},
+            thinkingConfig: {thinkingBudget: -1}
+          }')
+
+          curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$body" > out.json
+
+          text=$(jq -r '.candidates[0].content.parts[0].text // ""' out.json)
+          if [ -z "$text" ] || [ "$text" = "null" ]; then
+            echo "Model returned empty text"; cat out.json; exit 1
+          fi
+
+          title=$(echo "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
+          if [ -z "$title" ]; then title=$(echo "$text" | head -n1 | sed 's/[#*]*\s*//'); fi
+
+          slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+          body_md=$(echo "$text" | sed '1{/^# /d;}')
+
+          printf "%s\n%s\n" \
+            "---\nlayout: post\ntitle: \"$title\"\ndate: $today\n---" \
+            "$body_md" \
+            > "_posts/${today}-${slug}.md"
+
+          echo "outfile=_posts/${today}-${slug}.md" >> $GITHUB_OUTPUT
+
+      - name: Archive used draft
+        if: steps.draft.outputs.skip != 'true'
+        run: |
+          mkdir -p archived_drafts
+          mv "drafts/${{ steps.draft.outputs.file }}" "archived_drafts/"
+
+      - name: Commit & push
+        if: steps.draft.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _posts archived_drafts
+          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}"
+          git push
