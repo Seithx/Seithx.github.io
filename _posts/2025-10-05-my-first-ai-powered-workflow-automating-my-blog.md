@@ -2,6 +2,7 @@
 layout: post
 title: "My First AI-Powered Workflow: Automating My Blog"
 date: 2025-10-05
+author: Seithx
 ---
 I’ve been thinking a lot about reducing the friction between having a thought and sharing it here. Writing and formatting posts, even short ones, takes just enough effort to sometimes stop me from doing it. So today, I dove in and built my first real AI-powered workflow: a script that turns my raw notes into a formatted blog post using the Gemini 1.5 Pro API.
 
