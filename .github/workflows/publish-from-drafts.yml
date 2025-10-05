@@ -26,6 +26,7 @@ jobs:
           fi
           latest="$(ls -1t drafts | head -n 1)"
           echo "file=$latest" >> $GITHUB_OUTPUT
+          echo "Found draft: $latest"
 
       - name: Stop if no draft
         if: steps.draft.outputs.skip == 'true'
@@ -34,21 +35,22 @@ jobs:
       - name: Read draft contents
         id: read
         if: steps.draft.outputs.skip != 'true'
-        run: jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > draft.json
+        run: |
+          # JSON-safe string for the API payload
+          jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > draft.json
+          echo "Draft bytes: $(wc -c < draft.json)"
 
       - name: Generate polished post with Gemini 2.5 Pro
         if: steps.draft.outputs.skip != 'true'
         id: llm
         env:
-          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}   # your repo secret
+          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}   # repo secret
         run: |
           set -e
           today=$(date -u +"%Y-%m-%d")
           raw=$(cat draft.json)   # JSON string of the draft text
 
-          # Build a VALID request for the REST API:
-          # - use systemInstruction for the style guide
-          # - a single user message with your raw notes
+          # Build request for REST API
           body=$(jq -n --arg raw "$raw" '{
             systemInstruction: {
               role: "system",
@@ -68,5 +70,51 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$body" > out.json
 
-          # Extract/assemble markdown from all parts
+          # If API returned an error, show it and fail
+          err=$(jq -r '.error.message // empty' out.json)
+          if [ -n "$err" ]; then
+            echo "Gemini error:"; cat out.json; exit 1
+          fi
+
+          # Assemble Markdown from all text parts
           text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' out.json)
+          if [ -z "$text" ] || [ "$text" = "null" ]; then
+            echo "Model returned empty text"; cat out.json; exit 1
+          fi
+
+          # Derive title and slug
+          title=$(echo "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
+          if [ -z "$title" ]; then title=$(echo "$text" | head -n1 | sed 's/[#*]*\s*//'); fi
+          if [ -z "$title" ]; then title="Untitled"; fi
+
+          slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+          if [ -z "$slug" ]; then slug="post"; fi
+
+          # Remove H1 (Jekyll prints title from front matter)
+          body_md=$(echo "$text" | sed '1{/^# /d;}')
+
+          # Write post
+          outfile="_posts/${today}-${slug}.md"
+          printf "%s\n%s\n" \
+            "---\nlayout: post\ntitle: \"$title\"\ndate: $today\n---" \
+            "$body_md" \
+            > "$outfile"
+
+          echo "Wrote $outfile"
+          echo "outfile=$outfile" >> $GITHUB_OUTPUT
+
+      - name: Archive used draft
+        if: steps.draft.outputs.skip != 'true'
+        run: |
+          mkdir -p archived_drafts
+          mv "drafts/${{ steps.draft.outputs.file }}" "archived_drafts/"
+          echo "Archived drafts/${{ steps.draft.outputs.file }}"
+
+      - name: Commit & push
+        if: steps.draft.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _posts archived_drafts
+          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}"
+          git push
