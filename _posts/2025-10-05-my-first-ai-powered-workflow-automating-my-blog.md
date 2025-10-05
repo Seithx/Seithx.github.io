@@ -1,5 +1,8 @@
----\nlayout: post\ntitle: "My First AI-Powered Workflow: Automating My Blog"\ndate: 2025-10-05\n---
-
+---
+layout: post
+title: "My First AI-Powered Workflow: Automating My Blog"
+date: 2025-10-05
+---
 I’ve been thinking a lot about reducing the friction between having a thought and sharing it here. Writing and formatting posts, even short ones, takes just enough effort to sometimes stop me from doing it. So today, I dove in and built my first real AI-powered workflow: a script that turns my raw notes into a formatted blog post using the Gemini 1.5 Pro API.
 
 It’s one thing to play with AI in a web UI, but it’s another thing entirely to pipe your own text into a model and get a structured, ready-to-publish file back. Seeing my jumbled notes transform into a clean Markdown post felt like actual magic.
