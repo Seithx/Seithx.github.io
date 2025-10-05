@@ -44,50 +44,29 @@ jobs:
         run: |
           set -e
           today=$(date -u +"%Y-%m-%d")
-          raw=$(cat draft.json)
+          raw=$(cat draft.json)   # JSON string of the draft text
 
+          # Build a VALID request for the REST API:
+          # - use systemInstruction for the style guide
+          # - a single user message with your raw notes
           body=$(jq -n --arg raw "$raw" '{
+            systemInstruction: {
+              role: "system",
+              parts: [{text: "You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, 3–6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom. Output valid Markdown only."}]
+            },
             contents: [
-              {parts: [{text: "You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn the raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom."}]},
-              {parts: [{text: ("RAW NOTES:\n" + ($raw | fromjson))}]}
+              {
+                role: "user",
+                parts: [{text: ("RAW NOTES:\\n" + ($raw | fromjson))}]
+              }
             ],
-            generationConfig: {temperature: 0.6},
-            thinkingConfig: {thinkingBudget: -1}
+            generationConfig: {temperature: 0.6}
           }')
 
+          # Call Gemini (v1beta REST)
           curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}" \
             -H "Content-Type: application/json" \
             -d "$body" > out.json
 
-          text=$(jq -r '.candidates[0].content.parts[0].text // ""' out.json)
-          if [ -z "$text" ] || [ "$text" = "null" ]; then
-            echo "Model returned empty text"; cat out.json; exit 1
-          fi
-
-          title=$(echo "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
-          if [ -z "$title" ]; then title=$(echo "$text" | head -n1 | sed 's/[#*]*\s*//'); fi
-
-          slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
-          body_md=$(echo "$text" | sed '1{/^# /d;}')
-
-          printf "%s\n%s\n" \
-            "---\nlayout: post\ntitle: \"$title\"\ndate: $today\n---" \
-            "$body_md" \
-            > "_posts/${today}-${slug}.md"
-
-          echo "outfile=_posts/${today}-${slug}.md" >> $GITHUB_OUTPUT
-
-      - name: Archive used draft
-        if: steps.draft.outputs.skip != 'true'
-        run: |
-          mkdir -p archived_drafts
-          mv "drafts/${{ steps.draft.outputs.file }}" "archived_drafts/"
-
-      - name: Commit & push
-        if: steps.draft.outputs.skip != 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _posts archived_drafts
-          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}"
-          git push
+          # Extract/assemble markdown from all parts
+          text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' out.json)
