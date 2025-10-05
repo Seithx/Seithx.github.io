@@ -59,7 +59,7 @@ jobs:
             contents: [
               {
                 role: "user",
-                parts: [{text: ("RAW NOTES:\\n" + ($raw | fromjson))}]
+                parts: [{text: ("RAW NOTES:\n" + ($raw | fromjson))}]
               }
             ],
             generationConfig: {temperature: 0.6}
@@ -93,21 +93,19 @@ jobs:
           # Remove H1 (Jekyll prints title from front matter)
           body_md=$(echo "$text" | sed '1{/^# /d;}')
 
-          # Write post
           # Normalize the title a bit (straight quotes, no weird dashes)
-title=$(echo "$title" | sed 's/[“”]/"/g; s/[’]/'\''/g; s/—/-/g')
+          title=$(echo "$title" | sed 's/[“”]/"/g; s/[’]/'"'"'/g; s/—/-/g')
 
-outfile="_posts/${today}-${slug}.md"
-cat > "$outfile" <<EOF
----
-layout: post
-title: "$title"
-date: $today
----
-$body_md
-EOF
-echo "Wrote $outfile"
-
+          # Write post
+          outfile="_posts/${today}-${slug}.md"
+          cat > "$outfile" <<EOF
+          ---
+          layout: post
+          title: "$title"
+          date: $today
+          ---
+          $body_md
+          EOF
           echo "Wrote $outfile"
           echo "outfile=$outfile" >> $GITHUB_OUTPUT
 
