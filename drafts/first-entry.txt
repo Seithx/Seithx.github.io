@@ -1,3 +1,0 @@
-Today I tried automating my first blog workflow using Gemini 2.5 Pro.
-It’s amazing to see text become a clean post automatically.
-Next I’ll test adding voice-to-text.
