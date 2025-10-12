@@ -1,0 +1,170 @@
+[15:26, 10/12/2025] Ab: ### ✅ *Summary: Debug + Fix Log for YouTube Extraction Automation (yt-dlp + Bash + Python)*
+
+Below is a structured list of *every major issue, **root cause, and **resolution* we encountered while building a consistent workflow to extract all videos and playlists for *KAN 11* and general *children’s / Hebrew-only YouTube* searches.
+
+---
+
+### 🧱 *Environment & Setup Issues*
+
+* *Issue:* sudo: command not found in MINGW64
+  *Cause:* Git Bash on Windows doesn’t include sudo.
+  *Fix:* Run apt commands without sudo, or use user-level installs via curl or pip.
+
+* *Issue:* wget: command not found
+  *Cause:* MINGW64’s minimal install lacks wget.
+  *Fix:* Used curl -L -o file instead.
+
+* *Issue:* jq: command not found even after download
+  *Cause:* Windows executable jq.exe not callable as jq under Bash.
+  *Fix:*
+
+  1. Placed jq.exe in ~/.local/bin/
+  2. Created wrapper:
+
+     bash
+     echo '#!/usr/bin/env bash
+     exec "$HOME/.local/bin/jq.exe" "$@"' > ~/.local/bin/jq
+     chmod +x ~/.local/bin/jq
+     export PATH="$HOME/.local/bin:$PATH"
+     
+
+  ✅ Confirmed via jq --version.
+
+* *Issue:* stdbuf not found
+  *Cause:* Not included in MINGW coreutils.
+  *Fix:* Removed it. Used PYTHONUNBUFFERED=1 instead for real-time streaming.
+
+---
+
+### ⚙️ *yt-dlp Functionality Issues*
+
+* *Issue:* yt-dlp not found (PATH mismatch)
+  *Cause:* Installed in virtualenv (.venv/Scripts/yt-dlp).
+  *Fix:* Used python -m yt_dlp to ensure correct context.
+
+* *Issue:* yt-dlp hangs or shows no progress
+  *Cause:* default buffering in Windows + large “uploads” playlists hold all JSON in memory.
+  *Fix:* Added --lazy-playlist to stream JSON per item. Used PYTHONUNBUFFERED=1.
+
+* *Issue:* YouTube consent or age wall blocking output
+  *Fix:* Added optional COOKIES="--cookies-from-browser edge" (or chrome).
+
+* *Issue:* Wrong playlist extraction (KAN channel)
+  *Fix:* Used direct uploads playlist ID
+  https://www.youtube.com/playlist?list=UUKqFqiCe1dCUxRe0_YNZ6gg
+  instead of channel handle URL.
+
+---
+
+### 🧾 *Script Design & Syntax Errors*
+
+* *Issue:* Folder created but nothing happens
+  *Cause:* Script stuck at read -r -d '' waiting for NUL.
+  *Fix:* Replaced with Bash array QUERIES=( … ).
+
+* *Issue:* Silent fail due to set -euo pipefail
+  *Cause:* Small syntax error caused early exit.
+  *Fix:* Added tracing (bash -x, trap 'echo "ERR at line…") to catch failing line.
+
+* *Issue:* $-flat-playlist typo
+  *Cause:* Mistyped variable expansion → $- is a shell flag variable.
+  *Fix:* Corrected to $COOKIES --flat-playlist.
+
+* *Issue:* Broken pipe and Invalid argument spam
+  *Cause:* Python script consumed stdin for itself, leaving yt-dlp output unhandled.
+  *Fix:* Switched to python -c 'code' "$OUT" "$SAFE" so stdin remains open for JSON streaming.
+
+* *Issue:* Windows CRLF line endings
+  *Fix:* Converted scripts with sed -i 's/\r$//' script.sh.
+
+---
+
+### 📦 *Functional Refinements*
+
+* *1️⃣ KAN 11 Extraction*
+
+  * Needed to directly target the *uploads playlist* using ID UUKqFqiCe1dCUxRe0_YNZ6gg.
+  * Used:
+
+    bash
+    yt-dlp --flat-playlist --lazy-playlist -j "https://www.youtube.com/playlist?list=UUKqFqiCe1dCUxRe0_YNZ6gg"
+    
+  * Wrote JSON → TSV pipeline with live progress counters.
+
+* *2️⃣ General “Children / Religious” Search*
+
+  * Combined multiple Hebrew + English queries.
+  * Used ytsearchdate for recency.
+  * Created unified script looping through all queries.
+
+* *3️⃣ Hebrew-only Filtering*
+
+  * Problem: Global results brought Christian / Muslim videos.
+  * Fix: Added Unicode-range check for Hebrew letters (\u0590–\u05FF) in both title and uploader:
+
+    python
+    def heb(s): return any('\u0590' <= ch <= '\u05FF' for ch in s or "")
+    if not (heb(title) or heb(uploader)): continue
+    
+  * Optional: extra Jewish keyword filter for stronger precision.
+
+* *4️⃣ Deduplication*
+
+  * Added Python-based TSV deduper by first column (videoId or playlistId).
+
+---
+
+### 🧠 *Debugging Strategy that Worked*
+
+1. Use bash -x script.sh 2> debug.log to log line-by-line execution.
+2. Add trap 'echo "ERR at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR to print failures.
+3. Test individual components interactively:
+
+   bash
+   python -m yt_dlp -v --skip-download --print-json "ytsearch5:ילדים"
+   
+4. Verify outputs after each stage:
+
+   bash
+   tail videos.tsv
+   tail playlists.tsv
+   
+
+---
+
+### ✅ *Final Working Setup*
+
+* *Environment:* Git Bash (MINGW64), Python 3.12, yt-dlp 2025.09.26.
+* *Core flags:*
+
+  * --flat-playlist and --lazy-playlist for streaming
+  * --skip-download and --print-json for metadata only
+  * PYTHONUNBUFFERED=1 for live progress
+* *Data flow:* yt-dlp → tee (save JSONL) → inline Python → TSV + progress → dedupe.
+* *Result:*
+
+  * Reliable extraction of all uploads from KAN 11.
+  * Consistent global searches filtered to Hebrew-only kids’ videos.
+  * Fully automatable Bash + Python workflow, no manual intervention.
+
+---
+
+Would you like me to format this into a Markdown developer note (ready for README or internal doc)?
+[16:13, 10/12/2025] אליעזר בן יהודה: בוא נגיד שזה לא היה בסדר עדיפויות, אבל בהחלט בזבזתי על זה זמן.
+אם קנינקי,
+השאלה מה הביא לי אחר ב-value.
+זה היה יחסית קל, ורציתי את הפלייליסט הילדי, וזה משהו שיכולתי לעשות פה. אמנם ה-AI עושה את הכל, אלא ראיתי שהוא השתמש בביאולופור סופ וריקווסט וכל מיני דברים שזה לחלץ,
+הנחיתי אותו קצת כדי לחלץ.
+מה שהוספתי זה
+איך קוראים לזה? מה שהוספתי זה לנסות לחלץ מהפרויקט שבין יהודה,
+את כל ההוגים שיש שם,
+2742 או לא טוב, משהו כזה,
+אז הוא עובר אחד-אחד עד שהוא יגיע לסוף, עם דיליי שמתייחס לרובוט TXT. ובנוסף,
+אני חושב שאני אסיים בכלל את כל הפלייליסטים לילדים,
+זו שאלה איך לעבור סרטון-סרטון,
+יש דרך לעשות את זה אוטומטית,
+אולי בכלל לא צריך את זה,
+וליצור איזשהו פלייליסט.
+גם יצירת הפלייליסט זה החופר, אפשר לעשות את זה גם עם ה-YLT-DLP,
+אבל יש איזה E.P.I.לגוגי, אז זה מסובך, לא בא לי להתעס…
+[16:27, 10/12/2025] Ab: נכנס לעומק יותר מדי, אולי להמיר הכל לMP3, ואז להכניס הכל בפוש אחד לנוטבוק לם, שיגיד אם הוא מזהה סרטונים בעייתים לילדים דתיים יהודיים, ואם כן שיצטט למה ושם הסרטון, ואני אסיר, אפשר לסקור כמה וכמה סרטונים כאלו, אפילו ללכת לצפות ולהבין אם זה נשמע באמת מוזר או שהוא לא אמין, אם לא אמין, אז אני פשוט אשים את הכל בפלייליסט אחד, אם אמין, אז אני פשוט אסיר ואשאר עם פחות סרטונים.. הרבה עבודה, לא יודע, בנתיים זה מחלץ את הסרטונים מהיוטיוב, נחיה ונראה
