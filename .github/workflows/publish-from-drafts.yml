@@ -2,14 +2,13 @@ name: Publish cleaned blog post from drafts (Gemini 2.5 Pro)
 
 on:
   schedule:
-    - cron: "0 6 * * 2"   # Tue 09:00 Asia/Jerusalem = 06:00 UTC
-    - cron: "0 6 * * 5"   # Fri 09:00 Asia/Jerusalem = 06:00 UTC
+    - cron: "0 6 * * 2,5"   # 09:00 IL in summer
+    - cron: "0 7 * * 2,5"   # 09:00 IL in winter
   workflow_dispatch:
 
 permissions:
   contents: write
 
-# Prevent overlapping runs on the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -17,113 +16,130 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0              # allow rebase
-          persist-credentials: true   # keep GITHUB_TOKEN for push
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Find latest draft
+      - name: Gate by Israel local time (DST-safe)
+        run: |
+          tz=Asia/Jerusalem
+          hh=$(env TZ=$tz date +%H)
+          dow=$(env TZ=$tz date +%u)
+          if [ "$hh" != "09" ] || { [ "$dow" != "2" ] && [ "$dow" != "5" ]; }; then
+            echo "Not 09:00 $tz. Exiting."
+            exit 0
+          fi
+
+      - name: Sweep processed drafts left behind
+        run: |
+          set -e
+          mkdir -p _posts archived_drafts
+          # Any post that records its source_draft -> move remaining drafts accordingly
+          while IFS= read -r line; do
+            d=$(sed -E 's/^source_draft:\s*"?([^"]+)"?/\1/' <<<"$line")
+            [ -n "$d" ] && [ -f "$d" ] && { git mv -f "$d" archived_drafts/ || mv "$d" archived_drafts/; echo "Swept $d"; }
+          done < <(grep -Rho '^source_draft:\s*.*' _posts || true)
+
+      - name: Find latest unprocessed draft
         id: draft
         run: |
           set -e
-          if [ -z "$(ls -A drafts 2>/dev/null)" ]; then
+          latest="$(find drafts -type f ! -name '*.lock' -printf '%T@ %P\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
+          if [ -z "$latest" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          latest="$(ls -1t drafts | head -n 1)"
           echo "file=$latest" >> $GITHUB_OUTPUT
-          echo "Found draft: $latest"
+          echo "Found: $latest"
 
       - name: Stop if no draft
         if: steps.draft.outputs.skip == 'true'
         run: echo "No drafts to publish."
 
-      - name: Read draft contents
-        id: read
+      - name: Lock draft to prevent double-processing
         if: steps.draft.outputs.skip != 'true'
         run: |
-          # JSON-safe string for the API payload
+          ln "drafts/${{ steps.draft.outputs.file }}" "drafts/${{ steps.draft.outputs.file }}.lock" 2>/dev/null || true
+
+      - name: Skip if this draft already published
+        if: steps.draft.outputs.skip != 'true'
+        id: dup
+        run: |
+          mkdir -p _posts archived_drafts
+          pat="source_draft: \"drafts/${{ steps.draft.outputs.file }}\""
+          if grep -Rqs "$pat" _posts; then
+            echo "already=true" >> $GITHUB_OUTPUT
+            git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
+            echo "Draft already published. Archived it."
+          else
+            echo "already=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Read draft contents
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        run: |
           jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > draft.json
-          echo "Draft bytes: $(wc -c < draft.json)"
+          bytes=$(wc -c < draft.json)
+          if [ "$bytes" -gt 800000 ]; then echo "Draft too large ($bytes bytes)"; exit 1; fi
+          echo "Draft bytes: $bytes"
 
       - name: Generate polished post with Gemini 2.5 Pro
-        if: steps.draft.outputs.skip != 'true'
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         id: llm
         env:
-          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}   # repo secret
+          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}
         run: |
           set -e
+          [ -z "$GEMINI_API_KEY" ] && { echo "Missing GEMINI_API_KEY"; exit 1; }
           today=$(date -u +"%Y-%m-%d")
-          raw=$(cat draft.json)   # JSON string of the draft text
-
-          # Build request for REST API
+          raw=$(cat draft.json)
           body=$(jq -n --arg raw "$raw" '{
-            systemInstruction: {
-              role: "system",
-              parts: [{text: "You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, 3–6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom. Output valid Markdown only."}]
-            },
-            contents: [
-              {
-                role: "user",
-                parts: [{text: ("RAW NOTES:\n" + ($raw | fromjson))}]
-              }
-            ],
-            generationConfig: {temperature: 0.6}
+            systemInstruction:{role:"system",parts:[{text:"You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, 3–6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom. Output valid Markdown only."}]},
+            contents:[{role:"user",parts:[{text:("RAW NOTES:\n"+($raw|fromjson))}]}],
+            generationConfig:{temperature:0.6}
           }')
-
-          # Call Gemini (v1beta REST)
-          curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d "$body" > out.json
-
-          # If API returned an error, show it and fail
-          err=$(jq -r '.error.message // empty' out.json)
-          if [ -n "$err" ]; then
-            echo "Gemini error:"; cat out.json; exit 1
-          fi
-
-          # Assemble Markdown from all text parts
+          # Call with simple retries
+          for i in 1 2 3; do
+            curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}" \
+              -H "Content-Type: application/json" -d "$body" > out.json && break || sleep $((i*5))
+          done
+          err=$(jq -r '.error.message // empty' out.json); [ -n "$err" ] && { cat out.json; exit 1; }
           text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' out.json)
-          if [ -z "$text" ] || [ "$text" = "null" ]; then
-            echo "Model returned empty text"; cat out.json; exit 1
-          fi
+          [ -z "$text" ] || [ "$text" = "null" ] && { echo "Empty model output"; exit 1; }
 
-          # Derive title and slug
-          title=$(echo "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
-          if [ -z "$title" ]; then title=$(echo "$text" | head -n1 | sed 's/[#*]*\s*//'); fi
-          if [ -z "$title" ]; then title="Untitled"; fi
+          # Title
+          title=$(printf '%s\n' "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
+          [ -z "$title" ] && title=$(printf '%s\n' "$text" | head -n1 | sed 's/^[#*]\s*//')
+          [ -z "$title" ] && title="Untitled"
+          title=$(printf '%s' "$title" | sed 's/[“”]/"/g; s/[’]/'\''/g; s/—/-/g' | sed 's/"/\\"/g')
 
-          slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
-          if [ -z "$slug" ]; then slug="post"; fi
+          slug=$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+          [ -z "$slug" ] && slug="post"
 
-          # Remove H1 (Jekyll prints title from front matter)
-          body_md=$(echo "$text" | sed '1{/^# /d;}')
+          # Remove leading H1 if present
+          body_md=$(awk 'NR==1 && /^# /{next} {print}' <<<"$text")
 
-          # Normalize the title a bit (straight quotes, no weird dashes)
-          title=$(echo "$title" | sed 's/[“”]/"/g; s/[’]/'"'"'/g; s/—/-/g')
-
-          # Write post
+          mkdir -p _posts
           outfile="_posts/${today}-${slug}.md"
-          cat > "$outfile" <<EOF
-          ---
-          layout: post
-          title: "$title"
-          date: $today
-          ---
-          $body_md
-          EOF
-          echo "Wrote $outfile"
+          # Record source_draft to enable housekeeping
+          printf -- '---\nlayout: post\ntitle: "%s"\ndate: %s\nsource_draft: "drafts/%s"\n---\n%s\n' \
+            "$title" "$today" "${{ steps.draft.outputs.file }}" "$body_md" > "$outfile"
           echo "outfile=$outfile" >> $GITHUB_OUTPUT
+          echo "Wrote $outfile"
 
-      - name: Archive used draft
-        if: steps.draft.outputs.skip != 'true'
+      - name: Archive used draft (move before commit)
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
           mkdir -p archived_drafts
-          mv "drafts/${{ steps.draft.outputs.file }}" "archived_drafts/"
+          git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
           echo "Archived drafts/${{ steps.draft.outputs.file }}"
+
+      - name: Unlock draft
+        if: always() && steps.draft.outputs.skip != 'true'
+        run: rm -f "drafts/${{ steps.draft.outputs.file }}.lock"
 
       - name: Commit & push
         if: steps.draft.outputs.skip != 'true'
@@ -131,13 +147,7 @@ jobs:
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add _posts archived_drafts
-          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}" || echo "Nothing to commit"
-
-          # Rebase onto latest remote changes before pushing
-          git pull --rebase origin main || {
-            echo "Rebase failed; doing a regular merge"
-            git pull --no-rebase --no-edit origin main
-          }
+          git add -A
+          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}" || exit 0
+          git pull --rebase origin main || git pull --no-rebase --no-edit origin main
           git push
