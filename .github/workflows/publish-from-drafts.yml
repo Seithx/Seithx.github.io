@@ -24,30 +24,45 @@ jobs:
           persist-credentials: true
 
       - name: Gate by Israel local time (DST-safe)
+        id: gate
         run: |
           tz=Asia/Jerusalem
           hh=$(env TZ=$tz date +%H)
           dow=$(env TZ=$tz date +%u)
-          if [ "$hh" != "09" ] || { [ "$dow" != "2" ] && [ "$dow" != "5" ]; }; then
-            echo "Not 09:00 $tz. Exiting."
-            exit 0
+          if [ "$hh" = "09" ] && { [ "$dow" = "2" ] || [ "$dow" = "5" ]; }; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "Window open."
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "Not 09:00 $tz on Tue/Fri. Skipping."
           fi
 
+      - name: Stop early when outside window
+        if: steps.gate.outputs.ok != 'true'
+        run: exit 0
+
       - name: Sweep processed drafts left behind
+        if: steps.gate.outputs.ok == 'true'
         run: |
           set -e
           mkdir -p _posts archived_drafts
-          # Any post that records its source_draft -> move remaining drafts accordingly
-          while IFS= read -r line; do
+          # If there are no posts yet, do nothing
+          [ -d _posts ] || exit 0
+          # Move any recorded source drafts to archive
+          grep -Rho '^source_draft:\s*.*' _posts 2>/dev/null | while IFS= read -r line; do
             d=$(sed -E 's/^source_draft:\s*"?([^"]+)"?/\1/' <<<"$line")
-            [ -n "$d" ] && [ -f "$d" ] && { git mv -f "$d" archived_drafts/ || mv "$d" archived_drafts/; echo "Swept $d"; }
-          done < <(grep -Rho '^source_draft:\s*.*' _posts || true)
+            if [ -n "$d" ] && [ -f "$d" ]; then
+              git mv -f "$d" archived_drafts/ 2>/dev/null || mv "$d" archived_drafts/
+              echo "Swept $d"
+            fi
+          done
 
       - name: Find latest unprocessed draft
         id: draft
+        if: steps.gate.outputs.ok == 'true'
         run: |
           set -e
-          latest="$(find drafts -type f ! -name '*.lock' -printf '%T@ %P\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
+          latest="$(find drafts -type f ! -name '*.lock' -printf '%T@ %P\n' | sort -nr | head -n1 | cut -d' ' -f2- || true)"
           if [ -z "$latest" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             exit 0
@@ -56,30 +71,30 @@ jobs:
           echo "Found: $latest"
 
       - name: Stop if no draft
-        if: steps.draft.outputs.skip == 'true'
+        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip == 'true'
         run: echo "No drafts to publish."
 
       - name: Lock draft to prevent double-processing
-        if: steps.draft.outputs.skip != 'true'
+        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true'
         run: |
           ln "drafts/${{ steps.draft.outputs.file }}" "drafts/${{ steps.draft.outputs.file }}.lock" 2>/dev/null || true
 
       - name: Skip if this draft already published
-        if: steps.draft.outputs.skip != 'true'
         id: dup
+        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true'
         run: |
           mkdir -p _posts archived_drafts
           pat="source_draft: \"drafts/${{ steps.draft.outputs.file }}\""
-          if grep -Rqs "$pat" _posts; then
+          if grep -Rqs "$pat" _posts 2>/dev/null; then
             echo "already=true" >> $GITHUB_OUTPUT
-            git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
+            git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ 2>/dev/null || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
             echo "Draft already published. Archived it."
           else
             echo "already=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Read draft contents
-        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
           jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > draft.json
           bytes=$(wc -c < draft.json)
@@ -87,8 +102,8 @@ jobs:
           echo "Draft bytes: $bytes"
 
       - name: Generate polished post with Gemini 2.5 Pro
-        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         id: llm
+        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}
         run: |
@@ -101,7 +116,6 @@ jobs:
             contents:[{role:"user",parts:[{text:("RAW NOTES:\n"+($raw|fromjson))}]}],
             generationConfig:{temperature:0.6}
           }')
-          # Call with simple retries
           for i in 1 2 3; do
             curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}" \
               -H "Content-Type: application/json" -d "$body" > out.json && break || sleep $((i*5))
@@ -110,7 +124,6 @@ jobs:
           text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' out.json)
           [ -z "$text" ] || [ "$text" = "null" ] && { echo "Empty model output"; exit 1; }
 
-          # Title
           title=$(printf '%s\n' "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
           [ -z "$title" ] && title=$(printf '%s\n' "$text" | head -n1 | sed 's/^[#*]\s*//')
           [ -z "$title" ] && title="Untitled"
@@ -119,22 +132,20 @@ jobs:
           slug=$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
           [ -z "$slug" ] && slug="post"
 
-          # Remove leading H1 if present
           body_md=$(awk 'NR==1 && /^# /{next} {print}' <<<"$text")
 
           mkdir -p _posts
           outfile="_posts/${today}-${slug}.md"
-          # Record source_draft to enable housekeeping
           printf -- '---\nlayout: post\ntitle: "%s"\ndate: %s\nsource_draft: "drafts/%s"\n---\n%s\n' \
             "$title" "$today" "${{ steps.draft.outputs.file }}" "$body_md" > "$outfile"
           echo "outfile=$outfile" >> $GITHUB_OUTPUT
           echo "Wrote $outfile"
 
       - name: Archive used draft (move before commit)
-        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
           mkdir -p archived_drafts
-          git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
+          git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ 2>/dev/null || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
           echo "Archived drafts/${{ steps.draft.outputs.file }}"
 
       - name: Unlock draft
@@ -142,7 +153,7 @@ jobs:
         run: rm -f "drafts/${{ steps.draft.outputs.file }}.lock"
 
       - name: Commit & push
-        if: steps.draft.outputs.skip != 'true'
+        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true'
         run: |
           set -e
           git config user.name "github-actions[bot]"
