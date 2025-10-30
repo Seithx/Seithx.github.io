@@ -23,12 +23,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      # Gate runs ONLY on scheduled triggers
       - name: Gate by Israel local time (DST-safe)
+        if: github.event_name == 'schedule'
         id: gate
         run: |
           tz=Asia/Jerusalem
           hh=$(env TZ=$tz date +%H)
           dow=$(env TZ=$tz date +%u)
+          echo "Now (IL): $(env TZ=$tz date -Iseconds)"
           if [ "$hh" = "09" ] && { [ "$dow" = "2" ] || [ "$dow" = "5" ]; }; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
             echo "Window open."
@@ -37,17 +40,15 @@ jobs:
             echo "Not 09:00 $tz on Tue/Fri. Skipping."
           fi
 
-      - name: Stop early when outside window
-        if: steps.gate.outputs.ok != 'true'
+      - name: Stop early when outside window (scheduled only)
+        if: github.event_name == 'schedule' && steps.gate.outputs.ok != 'true'
         run: exit 0
 
       - name: Sweep processed drafts left behind
-        if: steps.gate.outputs.ok == 'true'
+        if: github.event_name != 'schedule' || steps.gate.outputs.ok == 'true'
         run: |
           set -e
           mkdir -p _posts archived_drafts
-          # If there are no posts yet, do nothing
-          [ -d _posts ] || exit 0
           # Move any recorded source drafts to archive
           grep -Rho '^source_draft:\s*.*' _posts 2>/dev/null | while IFS= read -r line; do
             d=$(sed -E 's/^source_draft:\s*"?([^"]+)"?/\1/' <<<"$line")
@@ -59,7 +60,7 @@ jobs:
 
       - name: Find latest unprocessed draft
         id: draft
-        if: steps.gate.outputs.ok == 'true'
+        if: github.event_name != 'schedule' || steps.gate.outputs.ok == 'true'
         run: |
           set -e
           latest="$(find drafts -type f ! -name '*.lock' -printf '%T@ %P\n' | sort -nr | head -n1 | cut -d' ' -f2- || true)"
@@ -71,17 +72,17 @@ jobs:
           echo "Found: $latest"
 
       - name: Stop if no draft
-        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip == 'true'
+        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip == 'true'
         run: echo "No drafts to publish."
 
       - name: Lock draft to prevent double-processing
-        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true'
+        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true'
         run: |
           ln "drafts/${{ steps.draft.outputs.file }}" "drafts/${{ steps.draft.outputs.file }}.lock" 2>/dev/null || true
 
       - name: Skip if this draft already published
         id: dup
-        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true'
+        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true'
         run: |
           mkdir -p _posts archived_drafts
           pat="source_draft: \"drafts/${{ steps.draft.outputs.file }}\""
@@ -94,7 +95,7 @@ jobs:
           fi
 
       - name: Read draft contents
-        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
           jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > draft.json
           bytes=$(wc -c < draft.json)
@@ -103,7 +104,7 @@ jobs:
 
       - name: Generate polished post with Gemini 2.5 Pro
         id: llm
-        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}
         run: |
@@ -142,7 +143,7 @@ jobs:
           echo "Wrote $outfile"
 
       - name: Archive used draft (move before commit)
-        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
           mkdir -p archived_drafts
           git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ 2>/dev/null || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
@@ -153,7 +154,7 @@ jobs:
         run: rm -f "drafts/${{ steps.draft.outputs.file }}.lock"
 
       - name: Commit & push
-        if: steps.gate.outputs.ok == 'true' && steps.draft.outputs.skip != 'true'
+        if: github.event_name != 'schedule' || steps.gate.outputs.ok == 'true'
         run: |
           set -e
           git config user.name "github-actions[bot]"
