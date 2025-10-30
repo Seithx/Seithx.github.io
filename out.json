@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "# An Unexpected Day of APIs and Data Scraping\n\nI wasn't planning on coding today, but a quick request turned my day off into a surprisingly productive session. It started with a simple problem—finding neighborhoods for thousands of addresses in Jerusalem—and ended with me diving deep into a web scraping challenge for a new RAG project. It was a perfect example of two very different kinds of development work.\n\nHere’s a bit of what I ran into:\n\n*   **APIs beat agents for bulk data.** The request was to get the neighborhood for ~4,000 addresses. My gut told me an AI agent would be incredibly slow and unreliable for that scale. A quick search with Claude confirmed my suspicion: the OpenStreetMap API was the right tool for the job.\n*   **AI is a killer co-pilot.** I used Claude for the whole mini-project: finding the right API, parsing the ugly JSON response (it pointed out the `suburb` field was what I needed), and then writing the entire Python script in a Google Colab notebook. It ran with minimal debugging, which was a pleasant surprise.\n*   **Data quality is always the catch.** The script worked great, but the output wasn't 100% perfect because the input address list wasn't clean. Still, for a quick-and-dirty solution, it was a solid win.\n*   **Scraping is the real grind.** After that quick win, I started a new project: building a RAG system for a Rabbi's website, which is packed with text. Getting access was easy, but extracting the content is proving to be the real beast.\n*   **Backend data structure can be a nightmare.** My current headache is that on the site, questions and their answers are stored as separate files. I need to figure out how to reliably merge them. It’s a messy, foundational step that will determine the success of the whole project.\n\nToday was a tale of two tasks. The first was a clean, satisfying win that went from problem to solution in no time, thanks to a clear API. The second is a reminder that most of the work in data projects is just getting your hands on clean, structured data. It’s a messy process, but I'm excited to see where it goes.\n\n**Next:** Keep wrestling with this web scraping and figure out how to properly link all the questions and answers for the RAG dataset.\n\n---\n*Tags: API, Python, Web Scraping, RAG, Claude, OpenStreetMap*"
+            "text": "# Refactoring, Rabbit Holes, and a Reverse-Engineering Breakthrough\n\nToday was one of those days that went in three directions at once. The main plan was to continue a major refactoring of our video routing project, but a couple of interesting side quests popped up and demanded attention. It was a classic juggling act between disciplined engineering, a tempting distraction, and a personal project that finally clicked.\n\nI spent a good chunk of the day making sure our refactoring was solid. After migrating most of the code with AI assistance, I found it had missed a few old functions for exporting to Excel. Getting those back in was easy, but it tanked our `radon` code quality score. It took some focused work with `black` and `mypy` to clean things up and get back to an 'A' rating. If you're going to refactor, you have to do it right.\n\nHere’s a snapshot of the day’s ups and downs:\n\n*   **The Automation Rabbit Hole:** An interesting request came in for an automation involving `xlswings` and Outlook. While it was a fun chance to play with a new library, I sank too much time into it before realizing Google Sheets was probably a better tool for the job. I pushed the code to Git and decided to move on—a good lesson in choosing the right tool before diving in.\n*   **A Surprise API Win:** I got an early start and decided to tackle a personal project I’ve picked up and dropped several times: reverse-engineering a notebook service's private API. The goal is to build a chat interface that uses it as a backend.\n*   **It Actually Worked!** After a lot of trial and error, I finally got a coherent, Hebrew response from the service through my custom interface. Seeing it work was an incredible feeling.\n*   **The Next Hurdle:** The connection isn't persistent and relies on manually refreshing cookies. The next step is figuring out how to maintain a stable session, which will probably mean setting up a VPS.\n\nIt’s easy to feel like I was all over the place, but the thrill of the API project breakthrough made the whole day feel like a win. Moving between grinding on code quality, exploring a new idea, and achieving a personal goal is what makes this work so engaging.\n\n**Next:** Finish the simple 5S automation I’ve been putting off—it’s quick, valuable, and needs to get done.\n\n---\n*Tags: Python, Refactoring, API, Code Quality, Automation, Side Projects*"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 1891,
-    "candidatesTokenCount": 531,
-    "totalTokenCount": 4047,
+    "promptTokenCount": 924,
+    "candidatesTokenCount": 533,
+    "totalTokenCount": 3272,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 1891
+        "tokenCount": 924
       }
     ],
-    "thoughtsTokenCount": 1625
+    "thoughtsTokenCount": 1815
   },
   "modelVersion": "gemini-2.5-pro",
-  "responseId": "c8cDaaytGu2lqtsP59G_wAs"
+  "responseId": "TcgDaZuiGrLnjMcP7e3LuAk"
 }
