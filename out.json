@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "# The Spider Chart and the Slippery Slope of a \"Quick\" Project\n\nA new request landed on my plate last week: automate the 5S audit process. Right now, it’s painfully manual. An employee walks to 10-12 different locations with a paper form, fills it out, then trudges back to a computer to type everything into Excel. After that, they have to manually calculate the results and email them to the right people. It’s a 15-30 minute time sink per person, which is especially ironic since this is for our Operational Excellence (OPEX) team.\n\nNaturally, I thought, \"Easy fix! I can automate that.\" I jumped right in, figuring it would take an hour, tops. Famous last words. That one hour quickly spiraled into many, reminding me (again) that I need to slow down and scope things out properly.\n\nHere’s where I’m at:\n\n*   **The Problem:** The current 5S audit is a manual, paper-based process that wastes a significant amount of time on data entry and reporting.\n*   **The Quick Win:** I successfully replaced the paper forms with a Google Form. Now, employees can complete the audits on their phones, and the data flows directly into a Google Sheet. That part is a definite success.\n*   **The Roadblock:** The automation is stuck. My biggest headache is trying to reliably generate a \"spider chart\" (a radar chart) using Google Apps Script. It’s just not working consistently.\n*   **The Unfinished Business:** Because of the chart issue, the final reports and emails still have to be sent out manually, which defeats half the purpose of the project.\n\nHonestly, this little project has drained a lot more energy than I expected. I see the value in finishing it, and I hate leaving things incomplete, but it’s become a real time-vampire. It's another classic example of how development projects, no matter how small they seem, always have a few surprises waiting for you down the road.\n\n**Next:** Finish this automation… just maybe not this month.\n\n---\n*Tags: automation, Google Apps Script, scope creep, process improvement, 5S, Google Forms*"
+            "text": "# An Unexpected Day of APIs and Data Scraping\n\nI wasn't planning on coding today, but a quick request turned my day off into a surprisingly productive session. It started with a simple problem—finding neighborhoods for thousands of addresses in Jerusalem—and ended with me diving deep into a web scraping challenge for a new RAG project. It was a perfect example of two very different kinds of development work.\n\nHere’s a bit of what I ran into:\n\n*   **APIs beat agents for bulk data.** The request was to get the neighborhood for ~4,000 addresses. My gut told me an AI agent would be incredibly slow and unreliable for that scale. A quick search with Claude confirmed my suspicion: the OpenStreetMap API was the right tool for the job.\n*   **AI is a killer co-pilot.** I used Claude for the whole mini-project: finding the right API, parsing the ugly JSON response (it pointed out the `suburb` field was what I needed), and then writing the entire Python script in a Google Colab notebook. It ran with minimal debugging, which was a pleasant surprise.\n*   **Data quality is always the catch.** The script worked great, but the output wasn't 100% perfect because the input address list wasn't clean. Still, for a quick-and-dirty solution, it was a solid win.\n*   **Scraping is the real grind.** After that quick win, I started a new project: building a RAG system for a Rabbi's website, which is packed with text. Getting access was easy, but extracting the content is proving to be the real beast.\n*   **Backend data structure can be a nightmare.** My current headache is that on the site, questions and their answers are stored as separate files. I need to figure out how to reliably merge them. It’s a messy, foundational step that will determine the success of the whole project.\n\nToday was a tale of two tasks. The first was a clean, satisfying win that went from problem to solution in no time, thanks to a clear API. The second is a reminder that most of the work in data projects is just getting your hands on clean, structured data. It’s a messy process, but I'm excited to see where it goes.\n\n**Next:** Keep wrestling with this web scraping and figure out how to properly link all the questions and answers for the RAG dataset.\n\n---\n*Tags: API, Python, Web Scraping, RAG, Claude, OpenStreetMap*"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 620,
-    "candidatesTokenCount": 472,
-    "totalTokenCount": 3205,
+    "promptTokenCount": 1891,
+    "candidatesTokenCount": 531,
+    "totalTokenCount": 4047,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 620
+        "tokenCount": 1891
       }
     ],
-    "thoughtsTokenCount": 2113
+    "thoughtsTokenCount": 1625
   },
   "modelVersion": "gemini-2.5-pro",
-  "responseId": "Fm4AaYOPEuSN_PUP2JW9wQc"
+  "responseId": "c8cDaaytGu2lqtsP59G_wAs"
 }
