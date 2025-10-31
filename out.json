@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "# Refactoring, Rabbit Holes, and a Reverse-Engineering Breakthrough\n\nToday was one of those days that went in three directions at once. The main plan was to continue a major refactoring of our video routing project, but a couple of interesting side quests popped up and demanded attention. It was a classic juggling act between disciplined engineering, a tempting distraction, and a personal project that finally clicked.\n\nI spent a good chunk of the day making sure our refactoring was solid. After migrating most of the code with AI assistance, I found it had missed a few old functions for exporting to Excel. Getting those back in was easy, but it tanked our `radon` code quality score. It took some focused work with `black` and `mypy` to clean things up and get back to an 'A' rating. If you're going to refactor, you have to do it right.\n\nHere’s a snapshot of the day’s ups and downs:\n\n*   **The Automation Rabbit Hole:** An interesting request came in for an automation involving `xlswings` and Outlook. While it was a fun chance to play with a new library, I sank too much time into it before realizing Google Sheets was probably a better tool for the job. I pushed the code to Git and decided to move on—a good lesson in choosing the right tool before diving in.\n*   **A Surprise API Win:** I got an early start and decided to tackle a personal project I’ve picked up and dropped several times: reverse-engineering a notebook service's private API. The goal is to build a chat interface that uses it as a backend.\n*   **It Actually Worked!** After a lot of trial and error, I finally got a coherent, Hebrew response from the service through my custom interface. Seeing it work was an incredible feeling.\n*   **The Next Hurdle:** The connection isn't persistent and relies on manually refreshing cookies. The next step is figuring out how to maintain a stable session, which will probably mean setting up a VPS.\n\nIt’s easy to feel like I was all over the place, but the thrill of the API project breakthrough made the whole day feel like a win. Moving between grinding on code quality, exploring a new idea, and achieving a personal goal is what makes this work so engaging.\n\n**Next:** Finish the simple 5S automation I’ve been putting off—it’s quick, valuable, and needs to get done.\n\n---\n*Tags: Python, Refactoring, API, Code Quality, Automation, Side Projects*"
+            "text": "# The LiveView Like Button Saga\n\nI decided to tackle what I thought would be a simple feature: a \"like\" button. It's a classic for a reason! Building it in Phoenix LiveView was a fantastic learning experience, especially when it came to making it update in real-time for everyone, not just the person clicking the button.\n\nHere’s a breakdown of what I learned and where I got stuck:\n\n*   **Schema First:** The foundation was a simple Ecto `Like` schema joining my `User` and `Post` tables. The real key was adding a `unique_index` on `[:user_id, :post_id]`. This prevents a user from liking the same post multiple times at the database level—a crucial safety net.\n*   **A Stateful Component:** I built a stateful `LikeComponent`. On `mount`, it determines two things: the total like count for the post, and whether the *current* user has already liked it. These two assigns (`likes_count` and `liked_by_user?`) drive the component's UI.\n*   **The Initial Click:** A `phx-click` event on the button worked great for the active user. My `handle_event` function would create or delete the like record, then update the socket's assigns to re-render the button and count locally. So far, so good.\n*   **The Real-Time Problem:** My component worked perfectly… for me. If another user liked the same post, my like count wouldn't update until I refreshed the page. This broke the \"live\" part of LiveView and was the main hurdle.\n*   **PubSub to the Rescue:** The answer was `Phoenix.PubSub`. Now, after any like is created or deleted, my application broadcasts a message on a topic unique to that post (e.g., `\"likes:#{post.id}\"`). The `LikeComponent` subscribes to this topic when it mounts.\n*   **The `handle_info` Nuance:** My component now has a `handle_info` function to catch these broadcasts. The big insight here was to *only* update the public `likes_count` from the broadcast. The `liked_by_user?` assign is personal to each user and shouldn't be changed by a global message. This prevents the UI from flickering for the person who actually clicked the button.\n\nThis feature really cemented my understanding of the LiveView process lifecycle. It's one thing to handle events for a single user, but another to broadcast state changes to many clients. The separation between user-specific state and public, broadcasted state was the big \"aha!\" moment. PubSub feels like a superpower once you get the hang of it.\n\n**Next:** I want to explore adding optimistic UI updates to make the button feel even more responsive.\n\n---\n*Tags: phoenix, liveview, elixir, ecto, pubsub, real-time*"
           }
         ],
         "role": "model"
@@ -14,17 +14,17 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 924,
-    "candidatesTokenCount": 533,
-    "totalTokenCount": 3272,
+    "promptTokenCount": 108,
+    "candidatesTokenCount": 627,
+    "totalTokenCount": 2766,
     "promptTokensDetails": [
       {
         "modality": "TEXT",
-        "tokenCount": 924
+        "tokenCount": 108
       }
     ],
-    "thoughtsTokenCount": 1815
+    "thoughtsTokenCount": 2031
   },
   "modelVersion": "gemini-2.5-pro",
-  "responseId": "TcgDaZuiGrLnjMcP7e3LuAk"
+  "responseId": "bWIEabG4HN-wqtsP0tPEoAQ"
 }
