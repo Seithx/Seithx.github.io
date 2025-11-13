@@ -63,12 +63,15 @@ jobs:
         if: github.event_name != 'schedule' || steps.gate.outputs.ok == 'true'
         run: |
           set -e
-          latest="$(find drafts -type f ! -name '*.lock' -printf '%T@ %P\n' | sort -nr | head -n1 | cut -d' ' -f2- || true)"
+          mkdir -p drafts
+          latest="$(find drafts -type f ! -name '*.lock' ! -name '.gitkeep' -printf '%T@ %P\n' | sort -nr | head -n1 | cut -d' ' -f2- || true)"
           if [ -z "$latest" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No drafts found."
             exit 0
           fi
-          echo "file=$latest" >> $GITHUB_OUTPUT
+          echo "file=$latest" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "Found: $latest"
 
       - name: Stop if no draft
@@ -87,19 +90,21 @@ jobs:
           mkdir -p _posts archived_drafts
           pat="source_draft: \"drafts/${{ steps.draft.outputs.file }}\""
           if grep -Rqs "$pat" _posts 2>/dev/null; then
-            echo "already=true" >> $GITHUB_OUTPUT
+            echo "already=true" >> "$GITHUB_OUTPUT"
             git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ 2>/dev/null || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
             echo "Draft already published. Archived it."
           else
-            echo "already=false" >> $GITHUB_OUTPUT
+            echo "already=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Read draft contents
+      - name: Read draft size
         if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
-          jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > draft.json
-          bytes=$(wc -c < draft.json)
-          if [ "$bytes" -gt 800000 ]; then echo "Draft too large ($bytes bytes)"; exit 1; fi
+          bytes=$(wc -c < "drafts/${{ steps.draft.outputs.file }}")
+          if [ "$bytes" -gt 800000 ]; then
+            echo "Draft too large ($bytes bytes)"
+            exit 1
+          fi
           echo "Draft bytes: $bytes"
 
       - name: Generate polished post with Gemini 2.5 Pro
@@ -110,19 +115,35 @@ jobs:
         run: |
           set -e
           [ -z "$GEMINI_API_KEY" ] && { echo "Missing GEMINI_API_KEY"; exit 1; }
+
           today=$(date -u +"%Y-%m-%d")
-          raw=$(cat draft.json)
+
+          tmp_draft="$RUNNER_TEMP/draft.json"
+          tmp_out="$RUNNER_TEMP/out.json"
+
+          # Convert raw draft to a JSON string safely (no file in repo)
+          jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > "$tmp_draft"
+          raw=$(cat "$tmp_draft")
+
           body=$(jq -n --arg raw "$raw" '{
-            systemInstruction:{role:"system",parts:[{text:"You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, 3–6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom. Output valid Markdown only."}]},
-            contents:[{role:"user",parts:[{text:("RAW NOTES:\n"+($raw|fromjson))}]}],
+            systemInstruction:{
+              role:"system",
+              parts:[{text:"You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, 3–6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom. Output valid Markdown only."}]
+            },
+            contents:[{
+              role:"user",
+              parts:[{text:("RAW NOTES:\n"+($raw|fromjson))}]
+            }],
             generationConfig:{temperature:0.6}
           }')
+
           for i in 1 2 3; do
             curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}" \
-              -H "Content-Type: application/json" -d "$body" > out.json && break || sleep $((i*5))
+              -H "Content-Type: application/json" -d "$body" > "$tmp_out" && break || sleep $((i*5))
           done
-          err=$(jq -r '.error.message // empty' out.json); [ -n "$err" ] && { cat out.json; exit 1; }
-          text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' out.json)
+
+          err=$(jq -r '.error.message // empty' "$tmp_out"); [ -n "$err" ] && { cat "$tmp_out"; exit 1; }
+          text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' "$tmp_out")
           [ -z "$text" ] || [ "$text" = "null" ] && { echo "Empty model output"; exit 1; }
 
           title=$(printf '%s\n' "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
@@ -139,7 +160,7 @@ jobs:
           outfile="_posts/${today}-${slug}.md"
           printf -- '---\nlayout: post\ntitle: "%s"\ndate: %s\nsource_draft: "drafts/%s"\n---\n%s\n' \
             "$title" "$today" "${{ steps.draft.outputs.file }}" "$body_md" > "$outfile"
-          echo "outfile=$outfile" >> $GITHUB_OUTPUT
+          echo "outfile=$outfile" >> "$GITHUB_OUTPUT"
           echo "Wrote $outfile"
 
       - name: Archive used draft (move before commit)
