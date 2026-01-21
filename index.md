@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Seithx’s Dev Notes
+Personal Blog for Asaf Lecht's development process :) 
 ---
 
 # Seithx’s Dev Notes
