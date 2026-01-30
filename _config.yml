@@ -1,5 +1,2 @@
-title: Seithx’s Dev Notes
-description: Human, short, steady progress.
-author: Seithx          # <— this fills the byline
-remote_theme: pages-themes/minimal@v0.2.0
-plugins: [jekyll-feed]
+og_image: 'https://seithx.github.io/assets/og-image.png'
+keywords: 'AI, Data Engineering, Python, TypeScript, Machine Learning, Full-Stack'
