@@ -1,14 +1,9 @@
 ---
-layout: default
-title: Seithx’s Dev Notes
-description: Personal Blog for Asaf Lecht's development process :) 
+layout: post
+title: ""
+date: 2026-01-30 12:56:17
+keywords: "example, seo, open graph"
+og:image: "https://example.com/image.jpg"
 ---
 
-# Seithx’s Dev Notes
-A light, human log of learning. New posts twice a week.
-
-<ul>
-{% for post in site.posts %}
-  <li><a href="{{ post.url | relative_url }}">{{ post.title }}</a> — {{ post.date | date: "%b %d, %Y" }}</li>
-{% endfor %}
-</ul>
+# Your content goes here...
