@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: default
 title: ""
 date: 2026-01-30 12:56:17
 keywords: "example, seo, open graph"
