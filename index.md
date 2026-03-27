@@ -35,7 +35,7 @@ I'm a Full-Stack AI/Data Engineer based in Israel. I write about the real proces
 
 **Recent topics:** AI-powered invoice processing, persistent browser automation, messaging digests with Gemini, Hebrew news extraction, shipping calculators, and RAG document cleanup.
 
-[GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
+[About / אודות](https://seithx.github.io/about/) | [GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
 
 ---
 
