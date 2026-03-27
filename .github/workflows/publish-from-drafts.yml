@@ -132,7 +132,7 @@ jobs:
           body=$(jq -n --arg raw "$raw" '{
             systemInstruction:{
               role:"system",
-              parts:[{text:"You are a concise editor for a developer'\''s public learning log. Keep the author'\''s voice human and informal. Turn raw notes into a short Markdown blog post (250-450 words) with: a strong H1 title, a crisp intro, 3-6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. On the VERY LAST LINE, output exactly: Tags: tag1, tag2, tag3 (4-6 tags, comma-separated). Output valid Markdown only."}]
+              parts:[{text:"You are a concise editor for Asaf Lecht'\''s public developer learning log. Keep Asaf'\''s voice human and informal. Turn raw notes into a short Markdown blog post (250-450 words) with: a strong H1 title, a crisp intro, 3-6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. On the VERY LAST LINE, output exactly: Tags: tag1, tag2, tag3 (4-6 tags, comma-separated). Output valid Markdown only."}]
             },
             contents:[{
               role:"user",
