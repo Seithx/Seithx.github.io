@@ -2,7 +2,7 @@
 layout: page
 title: "About"
 permalink: /about/
-description: "About Asaf Lecht (אסף לכט) -- Full-Stack AI/Data Engineer based in Israel. AI automation, browser tooling, RAG pipelines, and Hebrew-first tools."
+description: "About Asaf Lecht (אסף לכט) -- Full-Stack AI/Data Engineer based in Israel."
 ---
 
 <script type="application/ld+json">
@@ -25,36 +25,28 @@ description: "About Asaf Lecht (אסף לכט) -- Full-Stack AI/Data Engineer ba
 
 # Asaf Lecht | אסף לכט
 
-Full-Stack AI/Data Engineer based in Israel.
-
-I build production-ready systems that replace manual workflows with AI-powered automation. This blog is my learning journal -- an honest record of building software in the real world.
-
----
+Full-Stack AI/Data Engineer based in Israel. I build production-ready systems that replace manual workflows with AI-powered automation. This blog is my learning journal.
 
 ## What I Work On
 
 - **AI-Powered Automation** -- Invoice processing with Gemini, video analysis for manufacturing, AI-generated daily digests
-- **Browser Automation** -- Persistent headless browser patterns for wrapping web applications that lack APIs
-- **RAG Pipelines** -- Cleaning and structuring document collections for AI knowledge bases
-- **Hebrew Developer Tools** -- [Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf), a Chrome extension (80+ users) fixing Hebrew typing in AI chats
-- **Desktop Apps** -- Shipping calculators (React + Electron), audio/video converters, digital signage
+- **Browser Automation** -- Persistent headless browser patterns for API-less web applications
+- **RAG Pipelines** -- Document cleanup and structuring for AI knowledge bases
+- **[Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf)** -- Chrome extension (80+ users) fixing Hebrew typing in ChatGPT, Claude, and Gemini
+- **Desktop Apps** -- Shipping calculators, audio/video converters, digital signage
 
-## Tech Stack
+## Tech
 
 Python, TypeScript, Google Cloud, Gemini AI, FastAPI, Flask, React, Electron, Playwright, Docker, PyQt6, ChromaDB, GitHub Actions
 
-## Links
-
-[GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht) | [Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf) | [Blog Home](/)
+[GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht) | [Blog Home](/)
 
 ---
 
-## על קצה המזלג
+## בעברית
 
-שמי אסף לכט, מהנדס תוכנה ונתונים עם התמחות בבינה מלאכותית ואוטומציה. אני מפתח מערכות AI לייצור, עיבוד מסמכים, צינורות RAG, ואוטומציה של דפדפן. גר בישראל ועובד עם טכנולוגיות כמו Python, TypeScript, Google Cloud, ו-Gemini AI.
+שמי אסף לכט, מהנדס תוכנה ונתונים. אני מפתח מערכות AI לייצור, עיבוד מסמכים, ואוטומציה של דפדפן.
 
-הבלוג הזה הוא יומן הלמידה שלי -- תיעוד כנה של תהליך הפיתוח, האתגרים, הפריצות דרך, והלקחים שלמדתי בדרך.
+פיתחתי את [Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf) -- תוסף לכרום עם מעל 80 משתמשים שמתקן כתיבה בעברית ב-ChatGPT, Claude ו-Gemini.
 
-פיתחתי את [Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf) -- תוסף לכרום שמתקן את כיוון הכתיבה בעברית בצ'אטים של AI כמו ChatGPT, Claude ו-Gemini. לתוסף יש מעל 80 משתמשים פעילים בחנות של Chrome.
-
-אני גם תומך בפודקאסט [על המשמעות](https://mashma.net) -- שיח אינטלקטואלי מוביל בישראל.
+תומך בפודקאסט [על המשמעות](https://mashma.net).
