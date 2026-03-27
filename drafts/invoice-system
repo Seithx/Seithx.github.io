@@ -1,0 +1,32 @@
+Raw dev notes -- The Invoice Whisperer: Taming Multi-Invoices and Building a Dashboard
+
+**Project Background:**
+This project is all about automating invoice processing using AI. The core idea is to take incoming invoices, extract all the critical data like supplier, amounts, dates, and line items, and then spit out structured files (like TXT) that can be directly imported into accounting systems. It's a huge time-saver for businesses, cutting down on manual data entry and human error.
+
+**What Was Done:**
+This past sprint felt like a marathon, covering a ton of ground from AI accuracy to a full-blown customer dashboard.
+
+First up, I spent a lot of time refining the AI extraction. I enabled "thinking mode" for the LLM, which basically gives it more budget to ponder the invoice before giving an answer – definitely saw an uptick in accuracy there. I also clarified prompts around invoice vs. payment due dates and added robust validation for things like supplier HP (must be 9 digits, no more, no less) and ensuring totals match (subtotal + VAT = total). If any of these validations fail, or if key fields like invoice number are missing, it now smartly falls back to a more powerful (and expensive) AI model, or flags it for review. I also made sure to differentiate between actual API errors (which auto-retry) and low-confidence extractions.
+
+A big chunk of work went into file management and auditing. I built an `auditInvoiceFiles()` function that recursively scans source folders, calculates MD5 hashes, and detects duplicates. It's smart enough to resume from where it left off and has a timeout to prevent script overruns. There was a tricky bug with an empty array in the audit summary, but got that squashed. I also added utilities to `copyMissingToInbox()` (move unique, unprocessed files to the processing queue) and `deduplicateInbox()` (trash duplicate files in the inbox). File paths are now properly tracked, including folder structure, which is crucial for auditing.
+
+The biggest beast was probably handling **multi-invoice PDFs**. You know, those single PDF files that contain several distinct invoices. This required a complete overhaul of how we track invoices, adding a `parent_row_id` and ensuring child rows inherit the correct source. The re-processing logic for these was a nightmare – making sure existing child rows are reused, deleting old data before writing new, and merging correctly. It now auto-falls back to the Pro model for these complex files and skips duplicate extractions. After a lot of head-scratching and testing, I finally got it fully working, successfully exporting a batch of tricky multi-invoice PDFs.
+
+I also made significant changes to the TXT export format. Dates now use `DD/MM/YY` with slashes (had to write a one-time fix for existing files), and the entire export switched to tab-delimited. Allocation numbers are now included in the header, and the Google Drive URL for the original invoice is in there too.
+
+Finally, a massive effort went into building a **customer web dashboard** using Google Apps Script (GAS). This is a huge step forward for user experience. It's got a full Hebrew UI, translates all status messages, and allows customers to review and edit extracted data directly. I implemented a fallback chain for expense accounts and SKUs, split settings into customer vs. admin views, and added per-status guidance. Users can now edit line items, rename suppliers, and see amount comparisons. There were a few UI bugs, like action buttons not showing or an `editableStatuses` error, but those are ironed out.
+
+Throughout all this, I kept the documentation updated, adding a Hebrew user manual (v2.0 with HTML generation and embedded PDF), expanding the FAQ, and updating internal docs like `CLAUDE.md`.
+
+**What Was Hard or Surprising:**
+The multi-invoice PDF logic was definitely the hardest part. The data model changes, the re-processing flow, and ensuring correct merging and validation for multiple invoices within one file felt like untangling a ball of yarn while blindfolded. It was a constant battle of edge cases.
+
+Working with the GAS Web App was also a challenge. Building a full-fledged UI with dynamic data, state management, and full localization (Hebrew UI, translated messages) in GAS is... an experience. It's powerful for quick internal tools, but for a customer-facing app, it really pushes the limits and exposes some of its quirks. Debugging front-end issues in that environment can be a bit clunky.
+
+Also, the constant iteration on AI prompts and validation rules. It's never a "set it and forget it" thing. You add a rule, it breaks something else, you refine, you add a fallback. It's a dance. The date format fix for TXT files was a classic "oh, *that's* how they want it" moment, requiring a one-time data migration.
+
+**Personal Reflection:**
+This period felt incredibly intense but also deeply satisfying. There were moments of pure frustration, especially wrestling with the multi-invoice logic or trying to get the GAS UI to behave exactly as I wanted. But seeing the multi-invoice PDFs finally export correctly, or the customer dashboard come to life with a fully localized UI, was a huge win. It reinforced the importance of breaking down complex problems, even if it means a lot of small, incremental commits. I learned a lot about robust error handling, data integrity, and the nuances of building a user-friendly interface on a somewhat restrictive platform. It felt like a significant step forward in my ability to deliver end-to-end features.
+
+**What's Next:**
+Address remaining TODOs and refine the dashboard's user experience.

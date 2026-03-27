@@ -1,0 +1,34 @@
+Raw dev notes -- Browser Automation: Taming the Wild West of Web Sessions
+
+**Project Background:**
+This project is essentially an API wrapper around a complex web application, allowing us to programmatically interact with it as if a human user were present. The goal is to provide a stable, reliable interface for other services to consume, abstracting away all the messy browser automation details. Think of it as turning a web UI into a backend API.
+
+**What was done in this period:**
+This past week was a whirlwind of making this thing *actually work* reliably, especially around authentication and persistence.
+
+We kicked things off by ditching our custom client implementation and integrating directly with the official SDK, which felt like a no-brainer for stability. The big win here was getting native authentication working using `storage_state.json`, which is Playwright's way of saving a session. This immediately led to tackling automated session refresh, because these things *will* expire.
+
+A lot of time went into hardening the core. We fixed a bunch of heartbeat issues – increasing timeouts, ensuring UTF-8 encoding on Windows (classic!), and making sure the session refresh was crash-resilient. I built out a comprehensive suite of smoke tests, eventually hitting 16 different API endpoints, just to make sure everything was still breathing after changes.
+
+Authentication continued to be a beast. I added robust cookie validation after export, with backoff on repeated failures, and crucially, made sure we *never* overwrite a valid `storage_state.json` with invalid cookies. Distinguishing between genuine auth errors and transient network glitches in the `keep_alive` loop was a subtle but important fix. We also started auto-rebuilding the client every 45 minutes (later tweaked to 25-35 min with jitter) to refresh those pesky CSRF tokens, which were silently killing sessions. Auto-retrying chat RPC errors with a rebuilt client was another key reliability improvement.
+
+The biggest architectural shift was moving to a "browser-as-runtime" model. This means all RPC calls now go through a persistent Playwright browser instance, rather than spinning up and tearing down. This simplified the `keep_alive` logic significantly and felt like a much more robust approach. I also disabled periodic page refreshes, which I realized were inadvertently killing active sessions.
+
+Bot detection evasion got some love too, with "stealth mode" and specifying the Chrome channel. And because real-world usage means real-world logins, I implemented automated Google login from `.env` credentials, including handling the dreaded Google account chooser.
+
+Finally, I ran 24-hour endurance tests, simulating user messages with human-like pacing across two separate notebooks. This was crucial for finding those long-tail, intermittent issues. I also added a fix to clean corrupt browser caches on startup, which was causing some mysterious failures.
+
+**What was hard or surprising:**
+Honestly, the sheer *fragility* of web sessions and authentication is always surprising. It's like playing whack-a-mole with expiring tokens, invalid cookies, and silent failures. The `storage_state.json` concept is great, but making sure it's always valid and refreshed correctly was a constant battle. CSRF tokens silently breaking things was a real head-scratcher until I figured out the auto-rebuild strategy.
+
+The "browser-as-runtime" idea, while simplifying things in the long run, was a big mental model shift. It's not just scripting a browser anymore; it's treating it as a long-lived, stateful service.
+
+Google login, as always, was a fun challenge. Those selectors change, and the account chooser adds an extra layer of complexity. It's never just a simple username/password form.
+
+The endurance tests were brutal but incredibly valuable. You find issues that just don't show up in short-lived runs – things like memory leaks, subtle race conditions, or services silently dropping connections after a few hours.
+
+**Personal Reflection:**
+This past week felt like a deep dive into the trenches of making something truly *robust*. It wasn't about flashy new features, but about grinding through the details, fixing the subtle bugs, and building resilience. There were moments of frustration, especially when a session would mysteriously die after an hour, but the satisfaction of seeing the endurance tests run for 24 hours without a hitch was immense. It reinforced the lesson that reliability isn't a feature you add; it's a continuous process of refinement and anticipating failure. I feel like I've leveled up my understanding of stateful systems and the sheer complexity of modern web applications.
+
+**What's next:**
+Scaling for concurrent users, multi-session support, and proper process supervision with Docker.

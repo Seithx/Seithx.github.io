@@ -1,0 +1,17 @@
+Raw dev notes -- The Whack-a-Mole of Web Extraction (and a Cloudflare Worker Deep Dive)
+
+Okay, so this past week has been a wild ride with the Hebrew News Extractor project. For anyone new, this is my personal side project where I'm trying to build a robust system to pull structured article data from various Hebrew news websites. The goal is to have a reliable, automated way to get content for personal analysis and maybe eventually build some cool aggregators or tools on top of it. It's a constant battle against website changes and anti-bot measures, but it's a fantastic learning ground.
+
+This sprint, I managed to add two more sites to the roster: Makor Rishon and Hakol Hayehudi. That brings us up to 17 sites now, which feels like a pretty solid number. Adding new sites always feels good, like expanding the reach of the project.
+
+But of course, with more sites comes more maintenance. I spent a good chunk of time fixing four different extraction bugs that popped up after a recent selector review. It's always a game of whack-a-mole – one site changes a class name, and suddenly your extractor is broken. The Calcalist site also gave me a headache with its DraftJS content, where the fallback logic for extracting text was somehow outside the main selector loop, leading to weird empty articles. Got that sorted, thankfully.
+
+The biggest challenge, by far, was Site 14 (C14). This site has been a thorn in my side for a while, protected by Cloudflare Turnstile, which makes direct HTML scraping a nightmare. I had a breakthrough earlier by discovering their internal WordPress REST API, which completely bypassed the need to render the full HTML page. This was a huge win for speed and reliability. Instead of downloading and parsing a heavy HTML page, I could just hit the API directly.
+
+However, even with the API, I ran into new issues. The API calls themselves were sometimes getting blocked or timing out, especially when running on Cloud Run. This led me down a rabbit hole of proxying. I ended up implementing a Cloudflare Worker to act as a proxy for C14's API calls. This was a whole new level of complexity – debugging network issues, increasing timeouts (from default to 30s!), and exposing detailed error messages from the Worker to understand what was going wrong. The ultimate solution involved making the browser-side fetch directly to the Worker, bypassing Cloud Run's networking entirely for that specific request path. It felt like I was untangling a giant ball of yarn, but getting it to work reliably was incredibly satisfying. It's now much faster and more resilient.
+
+On the more mundane but important side, I also documented the Cloud Run configuration, especially around cold starts and site-specific limitations. And finally, I put together a `deploy.sh` script to streamline deployments and updated my CLAUDE.md notes, which is basically my brain dump for project specifics.
+
+Honestly, this week felt like a mix of small wins and one giant, frustrating, but ultimately rewarding battle. The constant need to adapt to website changes can be draining, but finding elegant solutions, like the Cloudflare Worker proxy for C14, feels like a real level-up in my understanding of web infrastructure and distributed systems. It's a reminder that persistence pays off, even when you're staring at cryptic network errors for hours.
+
+Next up: Continue refining existing extractors and tackle the next batch of sites.
