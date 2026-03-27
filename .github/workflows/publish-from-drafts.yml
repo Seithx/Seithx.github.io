@@ -1,4 +1,4 @@
-name: Publish cleaned blog post from drafts (Gemini 2.5 Pro)
+name: Publish cleaned blog post from drafts (Gemini 2.5 Flash)
 
 on:
   schedule:
@@ -14,7 +14,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - name: Check schedule window (DST-safe)
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch -- proceeding."
+            exit 0
+          fi
+          tz=Asia/Jerusalem
+          hh=$(env TZ=$tz date +%H)
+          dow=$(env TZ=$tz date +%u)
+          echo "Now (IL): $(env TZ=$tz date -Iseconds)"
+          if [ "$hh" = "09" ] && { [ "$dow" = "2" ] || [ "$dow" = "5" ]; }; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            echo "Window open."
+          else
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "Not 09:00 $tz on Tue/Fri. Skipping."
+          fi
+
   publish:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,33 +50,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      # Gate runs ONLY on scheduled triggers
-      - name: Gate by Israel local time (DST-safe)
-        if: github.event_name == 'schedule'
-        id: gate
-        run: |
-          tz=Asia/Jerusalem
-          hh=$(env TZ=$tz date +%H)
-          dow=$(env TZ=$tz date +%u)
-          echo "Now (IL): $(env TZ=$tz date -Iseconds)"
-          if [ "$hh" = "09" ] && { [ "$dow" = "2" ] || [ "$dow" = "5" ]; }; then
-            echo "ok=true" >> "$GITHUB_OUTPUT"
-            echo "Window open."
-          else
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "Not 09:00 $tz on Tue/Fri. Skipping."
-          fi
-
-      - name: Stop early when outside window (scheduled only)
-        if: github.event_name == 'schedule' && steps.gate.outputs.ok != 'true'
-        run: exit 0
-
       - name: Sweep processed drafts left behind
-        if: github.event_name != 'schedule' || steps.gate.outputs.ok == 'true'
         run: |
           set -e
           mkdir -p _posts archived_drafts
-          # Move any recorded source drafts to archive
           grep -Rho '^source_draft:\s*.*' _posts 2>/dev/null | while IFS= read -r line; do
             d=$(sed -E 's/^source_draft:\s*"?([^"]+)"?/\1/' <<<"$line")
             if [ -n "$d" ] && [ -f "$d" ]; then
@@ -60,7 +64,6 @@ jobs:
 
       - name: Find latest unprocessed draft
         id: draft
-        if: github.event_name != 'schedule' || steps.gate.outputs.ok == 'true'
         run: |
           set -e
           mkdir -p drafts
@@ -75,17 +78,17 @@ jobs:
           echo "Found: $latest"
 
       - name: Stop if no draft
-        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip == 'true'
+        if: steps.draft.outputs.skip == 'true'
         run: echo "No drafts to publish."
 
       - name: Lock draft to prevent double-processing
-        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true'
+        if: steps.draft.outputs.skip != 'true'
         run: |
           ln "drafts/${{ steps.draft.outputs.file }}" "drafts/${{ steps.draft.outputs.file }}.lock" 2>/dev/null || true
 
       - name: Skip if this draft already published
         id: dup
-        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true'
+        if: steps.draft.outputs.skip != 'true'
         run: |
           mkdir -p _posts archived_drafts
           pat="source_draft: \"drafts/${{ steps.draft.outputs.file }}\""
@@ -98,7 +101,7 @@ jobs:
           fi
 
       - name: Read draft size
-        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
           bytes=$(wc -c < "drafts/${{ steps.draft.outputs.file }}")
           if [ "$bytes" -gt 800000 ]; then
@@ -107,11 +110,12 @@ jobs:
           fi
           echo "Draft bytes: $bytes"
 
-      - name: Generate polished post with Gemini 2.5 Pro
+      - name: Generate polished post with Gemini 2.5 Flash
         id: llm
-        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}
+          DRAFT_FILE: ${{ steps.draft.outputs.file }}
         run: |
           set -e
           [ -z "$GEMINI_API_KEY" ] && { echo "Missing GEMINI_API_KEY"; exit 1; }
@@ -122,13 +126,13 @@ jobs:
           tmp_out="$RUNNER_TEMP/out.json"
 
           # Convert raw draft to a JSON string safely (no file in repo)
-          jq -Rs . < "drafts/${{ steps.draft.outputs.file }}" > "$tmp_draft"
+          jq -Rs . < "drafts/$DRAFT_FILE" > "$tmp_draft"
           raw=$(cat "$tmp_draft")
 
           body=$(jq -n --arg raw "$raw" '{
             systemInstruction:{
               role:"system",
-              parts:[{text:"You are a concise editor for a developer’s public learning log. Keep the author’s voice human and informal. Turn raw notes into a short Markdown blog post (250–450 words) with: a strong H1 title, a crisp intro, 3–6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. Add 4–6 tags as a comma list at the bottom. Output valid Markdown only."}]
+              parts:[{text:"You are a concise editor for a developer'\''s public learning log. Keep the author'\''s voice human and informal. Turn raw notes into a short Markdown blog post (250-450 words) with: a strong H1 title, a crisp intro, 3-6 bullet points for key learnings/struggles, a short reflection, and a one-line Next at the end. On the VERY LAST LINE, output exactly: Tags: tag1, tag2, tag3 (4-6 tags, comma-separated). Output valid Markdown only."}]
             },
             contents:[{
               role:"user",
@@ -138,7 +142,7 @@ jobs:
           }')
 
           for i in 1 2 3; do
-            curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}" \
+            curl -sf "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
               -H "Content-Type: application/json" -d "$body" > "$tmp_out" && break || sleep $((i*5))
           done
 
@@ -146,41 +150,77 @@ jobs:
           text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' "$tmp_out")
           [ -z "$text" ] || [ "$text" = "null" ] && { echo "Empty model output"; exit 1; }
 
+          # Extract title safely -- sanitize to plain ASCII for shell safety
           title=$(printf '%s\n' "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
           [ -z "$title" ] && title=$(printf '%s\n' "$text" | head -n1 | sed 's/^[#*]\s*//')
           [ -z "$title" ] && title="Untitled"
-          title=$(printf '%s' "$title" | sed 's/[“”]/"/g; s/[’]/'\''/g; s/—/-/g' | sed 's/"/\\"/g')
 
-          slug=$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+          # Extract tags from last line if present (e.g., "Tags: AI, Python, ...")
+          tag_line=$(printf '%s\n' "$text" | grep -i '^[*_]*Tags:' | tail -n1 || true)
+          tags=""
+          if [ -n "$tag_line" ]; then
+            tags=$(printf '%s' "$tag_line" | sed -E 's/^[*_]*Tags:\s*//i; s/[*_]//g; s/\s*,\s*/, /g')
+          fi
+
+          # Write title and tags to temp files to avoid shell injection
+          printf '%s' "$title" > "$RUNNER_TEMP/title.txt"
+          printf '%s' "$tags" > "$RUNNER_TEMP/tags.txt"
+
+          # Build safe slug from title
+          slug=$(sed -E 's/[^a-zA-Z0-9]+/-/g; s/^-+//; s/-+$//' "$RUNNER_TEMP/title.txt" | tr '[:upper:]' '[:lower:]')
           [ -z "$slug" ] && slug="post"
 
-          body_md=$(awk 'NR==1 && /^# /{next} {print}' <<<"$text")
+          # Strip H1 title line and tag line from body
+          body_md=$(printf '%s\n' "$text" | awk 'NR==1 && /^# /{next} {print}' | sed '/^[*_]*Tags:/d')
+
+          # Read back title safely for frontmatter
+          safe_title=$(sed 's/"/\\"/g' "$RUNNER_TEMP/title.txt")
+          safe_tags=$(cat "$RUNNER_TEMP/tags.txt")
 
           mkdir -p _posts
           outfile="_posts/${today}-${slug}.md"
-          printf -- '---\nlayout: post\ntitle: "%s"\ndate: %s\nsource_draft: "drafts/%s"\n---\n%s\n' \
-            "$title" "$today" "${{ steps.draft.outputs.file }}" "$body_md" > "$outfile"
+
+          # Build post file safely using cat heredoc (no variable interpolation in body)
+          {
+            echo "---"
+            echo "layout: post"
+            printf 'title: "%s"\n' "$safe_title"
+            printf 'date: %s\n' "$today"
+            printf 'source_draft: "drafts/%s"\n' "$DRAFT_FILE"
+            if [ -n "$safe_tags" ]; then
+              printf 'tags: [%s]\n' "$safe_tags"
+            fi
+            echo "---"
+            printf '%s\n' "$body_md"
+          } > "$outfile"
+
           echo "outfile=$outfile" >> "$GITHUB_OUTPUT"
           echo "Wrote $outfile"
 
       - name: Archive used draft (move before commit)
-        if: (github.event_name != 'schedule' || steps.gate.outputs.ok == 'true') && steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        env:
+          DRAFT_FILE: ${{ steps.draft.outputs.file }}
         run: |
           mkdir -p archived_drafts
-          git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ 2>/dev/null || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
-          echo "Archived drafts/${{ steps.draft.outputs.file }}"
+          git mv -f "drafts/$DRAFT_FILE" archived_drafts/ 2>/dev/null || mv "drafts/$DRAFT_FILE" archived_drafts/
+          echo "Archived drafts/$DRAFT_FILE"
 
       - name: Unlock draft
         if: always() && steps.draft.outputs.skip != 'true'
         run: rm -f "drafts/${{ steps.draft.outputs.file }}.lock"
 
       - name: Commit & push
-        if: github.event_name != 'schedule' || steps.gate.outputs.ok == 'true'
+        if: steps.draft.outputs.skip != 'true'
+        env:
+          OUTFILE: ${{ steps.llm.outputs.outfile }}
         run: |
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}" || exit 0
+          git add _posts/ archived_drafts/ drafts/
+          msg="Publish: ${OUTFILE:-sweep-only}"
+          git diff --cached --quiet && { echo "Nothing to commit."; exit 0; }
+          git commit -m "$msg"
           git pull --rebase origin main || git pull --no-rebase --no-edit origin main
           git push
