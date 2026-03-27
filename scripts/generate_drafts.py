@@ -84,7 +84,10 @@ def gemini_call(prompt, system_prompt):
             "parts": [{"text": system_prompt}],
         },
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.1, "thinkingConfig": {"thinkBudget": -1}},
+        "generationConfig": {
+            "temperature": 0.1,
+            "thinkingConfig": {"thinkBudget": -1},
+        },
     }).encode()
 
     req = urllib.request.Request(url, data=body, method="POST")
@@ -101,6 +104,9 @@ def gemini_call(prompt, system_prompt):
             parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
             text = "\n".join(p.get("text", "") for p in parts)
             return text if text and text != "null" else None
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode() if e.fp else ""
+            print(f"  [WARNING] Gemini attempt {attempt+1} failed: {e} -- {err_body[:300]}")
         except Exception as e:
             print(f"  [WARNING] Gemini attempt {attempt+1} failed: {e}")
             import time
