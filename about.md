@@ -35,10 +35,8 @@ Full-Stack AI/Data Engineer based in Israel. I build production-ready systems th
 
 ## בעברית
 
-שמי אסף לכט, מהנדס תוכנה ונתונים. אני מפתח מערכות AI לייצור, עיבוד מסמכים, ואוטומציה של דפדפן.
+אני אסף לכט, מפתח תוכנה שעובד בעיקר עם Python ו-TypeScript. בשנים האחרונות אני מתעסק הרבה עם בינה מלאכותית ואוטומציה -- בניית כלים שעוזרים לאנשים לעבוד יותר חכם ופחות ידנית.
 
-פיתחתי את <a href="https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf">Smart Hebrew RTL</a> -- תוסף לכרום עם מעל 80 משתמשים שמתקן כתיבה בעברית ב-ChatGPT, Claude ו-Gemini.
-
-תומך בפודקאסט <a href="https://mashma.net">על המשמעות</a>.
+בניתי את <a href="https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf">Smart Hebrew RTL</a>, תוסף קטן לכרום שמסדר את כיוון הכתיבה בעברית באתרי AI. תומך בפודקאסט <a href="https://mashma.net">על המשמעות</a>.
 
 </div>
