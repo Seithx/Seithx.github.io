@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Asaf Lecht - Developer Blog"
-description: "Developer learning journal by Asaf Lecht (אסף לכט). Projects in AI automation, browser tooling, RAG pipelines, and Hebrew tech."
+description: "Developer learning journal by Asaf Lecht (אסף לכט). AI automation, browser tooling, RAG pipelines, and Hebrew tech."
 ---
 
 <script type="application/ld+json">
@@ -27,16 +27,14 @@ description: "Developer learning journal by Asaf Lecht (אסף לכט). Projects
 
 # Asaf Lecht | אסף לכט
 
-**Full-Stack AI/Data Engineer** -- Developer learning journal
+Full-Stack AI/Data Engineer in Israel. I build AI-powered automation and write about the process -- struggles, breakthroughs, and lessons learned.
 
-A learning journal about building production AI systems, browser automation, RAG pipelines, and Hebrew-first tools.
-
-I'm a Full-Stack AI/Data Engineer based in Israel. I write about the real process of building software -- the struggles, breakthroughs, scope creep, and lessons learned along the way.
-
-**Recent topics:** AI-powered invoice processing, persistent browser automation, messaging digests with Gemini, Hebrew news extraction, shipping calculators, and RAG document cleanup.
-
-[About / אודות](https://seithx.github.io/about/) | [GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
+[About](/about/) | [GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
 
 ---
 
 ## Posts
+
+{% for post in site.posts %}
+- **[{{ post.title }}]({{ post.url }})** -- {{ post.date | date: "%B %d, %Y" }}
+{% endfor %}
