@@ -1,0 +1,33 @@
+Raw dev notes -- Invoice Processing System: Gemini + Google Sheets for Priority ERP (March 2026)
+
+Built a complete invoice processing system for a client. PDFs come in via email or Google Drive,
+get processed by Gemini (Flash with Pro fallback), and output tab-delimited files for Priority ERP.
+The whole thing runs on Google Apps Script.
+
+Architecture:
+- DriveWatcher scans inbox folder for new PDFs
+- Gemini 2.5 Flash extracts structured data (supplier, amounts, line items)
+- Smart fallback to Gemini Pro when Flash fails (bad HP numbers, missing fields, totals mismatch)
+- Results stored in Google Sheets with status tracking
+- TXT files generated in Priority ERP format
+- Customer web dashboard (GAS Web App) with Hebrew UI
+
+Key challenges:
+- Multi-invoice PDFs: had to split, extract unique invoice numbers, merge duplicates
+- Hebrew supplier names and RTL rendering
+- HP (company ID) validation: exactly 9 digits, pad if shorter
+- Gemini hallucinating invoice dates -- added dynamic year range validation
+- Google Apps Script 6-minute timeout: built checkpoint/resume system
+- Tab-delimited format with DD/MM/YY dates for Priority compatibility
+
+Smart features:
+- Thinking mode (thinkBudget: -1) for better extraction accuracy
+- Save both Flash and Pro responses for comparison
+- Audit script: recursive scan, MD5 dedup, missing file diagnosis
+- Per-status guidance in the dashboard UI
+- Fallback chain for expense_account and SKU codes
+
+This went from "just parse some PDFs" to a full accounts-payable automation. Scope creep
+is real but the client is happy.
+
+Next: Status review workflow, automated supplier matching improvements.

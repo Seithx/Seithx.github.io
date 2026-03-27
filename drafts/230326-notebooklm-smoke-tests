@@ -1,0 +1,25 @@
+Raw dev notes -- NotebookLM: From Cookie Hell to Smoke Tests (early-mid March 2026)
+
+The early days of the NotebookLM wrapper were rough. I was extracting cookies via Playwright,
+validating them, backing them up -- and it STILL broke constantly. This week was about
+stabilizing the foundation.
+
+Key work:
+- Built a comprehensive 16-endpoint smoke test script
+- Native auth via storage_state.json replaced manual cookie extraction
+- Added crash-resilient session refresh
+- Heartbeat system with JSONL logging and status.json
+- Keep-alive supervisor loop as safety net
+- Fixed UTF-8 encoding issues on Windows for heartbeat output
+- Port moved to 8001 to avoid conflicts
+
+The big "aha": I was overcomplicating auth. Playwright's persistent browser profile stores
+cookies internally. No need to extract, validate, or back them up. Just reuse the same
+browser profile directory. All the cookie management code became dead weight.
+
+Struggles:
+- storage_state.json kept getting overwritten with invalid cookies on auth failures
+- Repeated failures needed exponential backoff
+- Windows-specific encoding issues with heartbeat output
+
+This was the "make it work reliably" phase before the browser-as-runtime rewrite.

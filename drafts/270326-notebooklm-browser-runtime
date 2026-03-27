@@ -1,0 +1,28 @@
+Raw dev notes -- NotebookLM ChatWrapper: The Browser-as-Runtime Journey (late March 2026)
+
+This week I mass-refactored my NotebookLM API wrapper. The old approach extracted cookies
+and replayed them with httpx -- fragile, broke every few hours. The new idea: keep a
+persistent headless Playwright browser running and execute all Google API calls INSIDE it
+via page.evaluate(fetch). The browser IS the session.
+
+Key commits/milestones:
+- Replaced custom httpx client with notebooklm-py SDK
+- Built native auth via storage_state.json + automated session refresh
+- Moved to browser-as-runtime: all RPC calls via persistent Playwright page.evaluate(fetch)
+- Added stealth mode + real Chrome channel to dodge bot detection
+- Built a 24h endurance test with simulated user messages across two notebooks
+- Handled Google account chooser in auto-login flow
+- Fixed corrupt browser cache on startup
+
+Struggles:
+- CSRF tokens expire unpredictably. I tried refreshing every 25-35min with jitter
+- Auto-retry on RPC error with rebuilt client was tricky -- had to distinguish auth vs transient errors
+- Periodic page refresh killed the session instead of keeping it alive (counterintuitive!)
+- Google login selectors kept changing -- had to make email/password button selectors robust
+
+Reflection: The key insight is that fighting Google's auth system is futile. Instead of
+extracting tokens, just let the browser handle everything natively. It's like the difference
+between reverse-engineering an API and just using the website. Sometimes the "lazy" approach
+is the smart one.
+
+Next: Session refresh on heartbeat timeouts, source pipeline, concurrent user support.

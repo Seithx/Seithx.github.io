@@ -1,0 +1,14 @@
+Raw dev notes -- Google Recorder CLI: Downloading Audio with Speaker Diarization (Feb 2026)
+
+Quick project: built a CLI tool to download recordings from Google Recorder web app.
+Uses commander.js, handles auth via saved browser cookies, downloads audio files,
+and extracts speaker diarization data.
+
+Built it because Google Recorder has no export API and I needed to batch-download
+recordings for transcription. The web app only lets you download one at a time.
+
+Added an accessibility snapshot tool for debugging the DOM structure.
+Chrome DevTools MCP integration for development.
+
+Short project but useful. The a11y snapshot approach was interesting --
+instead of parsing HTML, query the accessibility tree for structured content.

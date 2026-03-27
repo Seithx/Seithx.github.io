@@ -138,7 +138,7 @@ jobs:
               role:"user",
               parts:[{text:("RAW NOTES:\n"+($raw|fromjson))}]
             }],
-            generationConfig:{temperature:0.6}
+            generationConfig:{temperature:0.1,thinkingConfig:{thinkBudget:-1}}
           }')
 
           for i in 1 2 3; do

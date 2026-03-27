@@ -1,0 +1,25 @@
+Raw dev notes -- Hebrew News Extractor: Scraping 17 Israeli News Sites (Feb-March 2026)
+
+Built a web scraper/API that extracts article text from Israeli news websites. Started with
+a few sites, now supports 17 including Ynet, Haaretz, Israel Hayom, TheMarker, and Channel 14.
+Deployed on Google Cloud Run.
+
+The journey:
+- Started with newspaper4k but it fails on many Hebrew sites
+- Built per-site CSS selector chains with fallback strategies
+- Added bot-protection bypass: Outbrain UA for Haaretz/TheMarker premium content
+- Cloudflare Turnstile became the biggest headache -- Channel 14 is still limited
+
+Cloudflare battle:
+- cloudscraper v3 from GitHub master
+- Full browser fingerprint fallback
+- Ultimately routed through Cloudflare Worker proxy (browser-side fetch)
+- Some sites just can't be scraped from datacenter IPs
+
+Deployed as Cloud Run service with Docker. Cold starts are annoying but acceptable.
+Did two full rounds of selector audits -- found and fixed extraction bugs across 8 sites.
+
+Struggle: every site is a special snowflake. DraftJS content models, AMP pages,
+paywalled content, different meta tag conventions. Each new site is a mini reverse-engineering project.
+
+Next: Custom domain, more sites, maybe a Chrome extension version.

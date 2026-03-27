@@ -1,0 +1,35 @@
+Raw dev notes -- WAHA Monitor: Building a WhatsApp Intelligence System (March 2026)
+
+My WAHA monitor project exploded in scope this month. What started as a simple WhatsApp
+group monitor turned into a full intelligence pipeline: message forwarding, daily AI digests,
+newsletter ingestion, Docker hardening, and a lot of crash recovery.
+
+Major features built:
+- Daily AI digest via Gemini: summarizes all monitored WhatsApp groups
+- Halacha digest: separate pipeline for religious content with dedup against previous digests
+- Email newsletter ingest via Gmail IMAP polling
+- Medium article pipeline: Gemini filter + Freedium fetch + TOON compression
+- Auto-forward digest to WhatsApp groups with randomized timing
+- Shabbat-aware scheduling (skip Fri 16:00 - Sat 21:00 Israel time)
+- Reminder system with persistence across container restarts
+- Pushover push notifications + QR code recovery on WhatsApp logout
+
+Operational hardening:
+- Docker watchdog with crash forensics, disk/WAL/memory checks
+- Escalating Docker recovery (restart -> unregister WSL)
+- Non-blocking startup catch-up with forward lock
+- ChromaDB dedup: removed 2268 duplicate messages
+- Security: bound all ports to localhost only
+- Weekly group name refresh instead of startup-only
+
+Struggles:
+- WAHA has 6 permanently failing groups with no upstream fix
+- Docker Desktop crashes required auto-restart detection
+- Sleep prevention on Windows was harder than expected (Modern Standby issues)
+- Digest catch-up after downtime needed careful checkpoint logic
+
+The system now runs 24/7 on my Windows machine with Docker, monitoring dozens of groups,
+filtering Medium articles, ingesting newsletters, and sending daily summaries. It's become
+my personal information hub.
+
+Next: Raspberry Pi migration, admin API endpoints, Voyage embeddings.

@@ -1,0 +1,22 @@
+Raw dev notes -- UPS Shipping Calculator: React + TypeScript Desktop App (Feb 2026)
+
+Built a shipping cost calculator for UPS Israel. React + TypeScript frontend, packaged as
+desktop app. Pulls zone data and pricing from Excel files.
+
+Key work this month:
+- Broke down monolithic App.tsx into 6 focused components
+- Fixed all 52 TypeScript errors for clean production build
+- Added comprehensive vitest test suite (74 tests)
+- Built localStorage persistence for form state
+- Custom app icon for EXE and favicon
+- Fixed tip clarity: combine dual surcharges, add specific weight thresholds
+- Pallet warnings redesign
+- Surcharge reduction tips made actionable
+
+Struggles:
+- ESLint v9 breaking changes during the refactor
+- Zone data parser needed caching to avoid redundant fetches
+- GitBash + npm output capture is flaky -- had to redirect to temp files
+
+The calculator now handles multi-item shipments with proper dimensional weight,
+pallet surcharges, and generates PDF quotes. Tests cover 74 scenarios.

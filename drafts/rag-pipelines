@@ -1,0 +1,26 @@
+Raw dev notes -- RAG Pipelines: Cleaning Source Material for NotebookLM (Feb-March 2026)
+
+Built two RAG pipelines (mikyab + rationalbelief) to prepare source materials for
+Google NotebookLM. The main challenge: raw source files are messy and NotebookLM has
+strict upload limits.
+
+Pipeline stages:
+- Standardize formats (PDF, DOCX, HTML -> Markdown)
+- Assess RAG-readiness and overlap between sources
+- LLM-based cleanup via Gemini API (async concurrent chunks)
+- Quality gate to prevent hallucination/expansion (105% length limit)
+- Batch into NotebookLM-sized uploads with H1 heading separators
+
+Gemini cleanup pipeline learnings:
+- ThinkingConfig + anti-hallucination prompt rules are essential
+- Quality gate at 105% caught cases where Gemini was expanding/paraphrasing
+- Split-retry for failed chunks worked better than increasing chunk size
+- Had to block formula reconstruction -- Gemini kept "fixing" math notation
+- Cross-file event loop bug: must reset SDK client between asyncio.run() calls
+
+Also built a NotebookLM vs ChatGPT/Claude benchmark with Hebrew ground-truth questions.
+NotebookLM's chunking internals are interesting -- documented findings.
+
+Archived 75 one-off scripts during the reorganization. Felt good.
+
+Next: Voyage embeddings for Hebrew, automated source refresh.
