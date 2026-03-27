@@ -313,7 +313,6 @@ def main():
 
     if not repo_commits:
         print("No new commits to process.")
-        save_marker()
         return
 
     # Group into draft topics
@@ -342,8 +341,11 @@ def main():
         else:
             print(f"  [ERROR] Failed to generate draft for {title}")
 
-    save_marker()
-    print(f"\n[OK] Generated {generated} new drafts, marker updated")
+    if generated > 0:
+        save_marker()
+        print(f"\n[OK] Generated {generated} new drafts, marker updated")
+    else:
+        print(f"\n[WARNING] No drafts generated (Gemini failures?), marker NOT updated")
 
 
 if __name__ == "__main__":
