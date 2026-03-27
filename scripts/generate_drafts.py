@@ -22,6 +22,8 @@ SKIP_REPOS = {
     "smart-hebrew-rtl",
     "termux-android-media-tools",
     "dev-environment-bootstrap",
+    "joni-extension-reverse-engineering",
+    "RHGROUPWHATSAPPAUTOMATION",
 }
 
 # Sensitive repos: strip specifics, keep generic
