@@ -1,0 +1,72 @@
+name: Generate blog drafts from recent commits
+
+on:
+  schedule:
+    - cron: "0 5 * * 0"   # Every Sunday 08:00 IL (summer)
+    - cron: "0 6 * * 0"   # Every Sunday 08:00 IL (winter)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - name: Check schedule window (DST-safe)
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch -- proceeding."
+            exit 0
+          fi
+          tz=Asia/Jerusalem
+          hh=$(env TZ=$tz date +%H)
+          dow=$(env TZ=$tz date +%u)
+          if [ "$hh" = "08" ] && [ "$dow" = "7" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "Not 08:00 IL on Sunday. Skipping."
+          fi
+
+  generate:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate drafts from commits
+        env:
+          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: python scripts/generate_drafts.py
+
+      - name: Commit & push new drafts
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add drafts/ .last_draft_gen
+          git diff --cached --quiet && { echo "No new drafts."; exit 0; }
+          count=$(git diff --cached --name-only -- drafts/ | wc -l)
+          git commit -m "feat: auto-generate $count blog draft(s) from recent commits"
+          git pull --rebase origin main || git pull --no-rebase --no-edit origin main
+          git push
