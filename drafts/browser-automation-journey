@@ -1,0 +1,45 @@
+Raw dev notes -- late March 2026
+
+This has been the most intense engineering sprint I've had in months, and it started
+from a place of pure frustration. I've been building a side project -- a REST API wrapper
+around a web application that doesn't have a public API. The idea is to expose its
+functionality through clean endpoints so I can integrate it with my other tools and
+build a custom chat interface on top.
+
+The problem is auth. This web app has aggressive session management and the auth flow
+changes frequently. My first approach (v1) was the textbook solution: extract auth tokens
+from the browser, replay them with an HTTP client. It worked... for about two hours.
+Then the tokens expired and everything broke. So I automated the refresh (v2). Better,
+but still fragile -- token lifetimes were unpredictable and I was constantly firefighting.
+
+Then I had the insight that changed everything: what if the browser IS the backend?
+Instead of extracting tokens and replaying them, I keep a persistent headless Playwright
+browser running and execute all API calls inside its JavaScript context. The browser
+handles cookies, CSRF, session refresh -- everything. I just call page.evaluate(fetch)
+and the request goes out with full session context.
+
+It sounds almost too simple, but getting here took weeks of iteration:
+- Replaced my custom HTTP client with a community SDK for the encoding/decoding
+- Built persistent browser profiles so the browser remembers its login across restarts
+- Wrote a 16-endpoint smoke test to validate every API route
+- Built a 24-hour endurance test that simulates real user behavior across multiple sessions
+- Added heartbeat monitoring with structured JSONL logging
+- Built a keep-alive supervisor as a safety net
+
+The struggles were real:
+- Counterintuitively, periodically refreshing the page KILLED the session instead of
+  keeping it alive. That one cost me hours of debugging.
+- Had to distinguish auth failures from transient network errors -- different retry strategies
+- Login UI selectors changed across app updates, breaking automation silently
+- Windows has encoding quirks that made logging output garbled
+- The browser's cache got corrupted once, requiring a detection-and-cleanup mechanism
+
+The whole thing now runs as a FastAPI server backed by a headless Chromium instance.
+It's been stable for days. The architecture feels elegant in its simplicity -- the browser
+does what browsers do best, and I just provide the REST interface on top.
+
+This project taught me that sometimes fighting a system's auth model is the wrong approach
+entirely. Instead of reverse-engineering the lock, just use the door. It connects back
+to something I keep learning: the best engineering solutions often feel obvious in hindsight.
+
+Next: concurrent user support and a proper error recovery pipeline.

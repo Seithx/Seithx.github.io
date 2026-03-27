@@ -1,0 +1,38 @@
+Raw dev notes -- Feb-March 2026
+
+I've been working on a data project that needs clean article text from Israeli news
+websites. Sounds simple, right? Just scrape the page and extract the article body.
+Turns out, this is one of those problems that looks easy until you actually try it,
+especially with Hebrew content.
+
+I built a web service that now supports 17 Israeli news outlets -- major papers, news
+sites, online-only publications. It's deployed on Google Cloud Run as a lightweight API.
+But getting here was a journey.
+
+Why Hebrew extraction is uniquely hard:
+- Most off-the-shelf extraction libraries (newspaper3k, readability, etc.) are optimized
+  for English. They make assumptions about text direction, paragraph structure, and
+  character encoding that break with Hebrew.
+- Israeli news sites use wildly different tech stacks. One uses DraftJS, another uses AMP,
+  a third has a WordPress API, a fourth uses a custom CMS from the 2000s.
+- RTL text handling adds complexity at every stage of the pipeline.
+- Many sites have aggressive anti-automation measures. Some serve completely different
+  content depending on who's asking.
+- Several sites can't be reached reliably from cloud infrastructure at all.
+
+I ended up building per-site extraction strategies with fallback chains. If the primary
+CSS selector fails, try the next one. If that fails, try the site's API endpoint if it
+has one. If THAT fails, try a generic extraction library as a last resort.
+
+I did two full audit rounds across all 17 sites, testing with real articles. Found and
+fixed extraction bugs affecting about half of them. The selectors drift over time as
+sites update their markup.
+
+The biggest lesson from this project: building a scraper is maybe 20% of the work.
+Maintaining it is the other 80%. Every time a site redesigns or adds a new content
+protection layer, it's a mini reverse-engineering project. I'm starting to think a
+browser extension approach might be more sustainable long-term.
+
+This is one of those projects where the interesting part isn't the code itself -- it's
+the constant problem-solving. Every site teaches you something new about how the web
+actually works behind the scenes.

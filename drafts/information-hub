@@ -1,0 +1,45 @@
+Raw dev notes -- March 2026
+
+A side project of mine has grown way beyond what I originally planned. It started as a
+simple thing: I'm in dozens of messaging groups -- professional communities, neighborhood
+stuff, news, tech discussions. Keeping up with all of them was impossible. I'd open the
+app after a busy day and see 500+ unread messages across 30 groups. Most of it noise,
+but buried in there are things I actually need to know about.
+
+So I built a monitor. It watches all my groups and at the end of each day, generates an
+AI-powered digest -- a concise summary of everything important that happened, organized by
+topic. Powered by Gemini. That part worked great. Then scope creep kicked in.
+
+Now it also:
+- Ingests email newsletters via IMAP polling and includes them in the digest
+- Filters online articles using the LLM as a relevance judge based on my interest profile
+- Has separate digest pipelines for different content categories (tech, community, religious content)
+- Auto-forwards the daily digest to relevant groups with randomized timing
+- Respects schedule constraints -- it knows about holidays and off-hours
+- Has a reminder system that persists across container restarts
+- Sends push notifications when something critical happens (session loss, system failures)
+
+But honestly, the operational side was HALF the project. Maybe more:
+- It runs in Docker on my Windows desktop. Docker Desktop crashes occasionally and I had
+  to build auto-detection and restart logic.
+- Windows fights you on running 24/7 services -- sleep mode, Modern Standby, random updates.
+  I built a whole keep-awake system just to stop the PC from sleeping.
+- Built a watchdog with escalating recovery: restart container -> restart Docker -> alert me
+- Catch-up logic was tricky -- when the system comes back from downtime, it needs to process
+  missed messages without creating duplicates. I cleaned up over 2000 duplicate records
+  from the early days before I got dedup right.
+- Some messaging groups have permanently broken API responses. No fix available upstream.
+  I just had to accept it and handle the errors gracefully.
+
+Getting the digest quality right took many iterations. The LLM would either be too verbose
+(defeating the purpose) or miss important things. I ended up with a system where the prompt
+gets the group names and content categories as context, and I tell it to be as long as
+needed but skip only truly redundant content.
+
+It started as a weekend hack. Now it's the tool I check every morning before anything else.
+It's like having a personal research assistant that reads everything I can't and tells me
+what matters. I'm planning to migrate it to a Raspberry Pi so it doesn't depend on my
+desktop being awake.
+
+The imposter syndrome part: I showed this to a friend and they said 'you built a product.'
+I don't know about that, but it's definitely the most complex system I've built on my own.

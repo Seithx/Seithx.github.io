@@ -1,14 +1,24 @@
-Raw dev notes -- Google Recorder CLI: Downloading Audio with Speaker Diarization (Feb 2026)
+Raw dev notes -- February 2026
 
-Quick project: built a CLI tool to download recordings from Google Recorder web app.
-Uses commander.js, handles auth via saved browser cookies, downloads audio files,
-and extracts speaker diarization data.
+Quick project that scratched a real itch. I use Google Recorder a lot -- it's great
+for recording meetings and lectures because it transcribes in real-time and identifies
+different speakers. The problem: there's no way to bulk export recordings. The web app
+only lets you download one at a time, and I had dozens I needed for a transcription
+project.
 
-Built it because Google Recorder has no export API and I needed to batch-download
-recordings for transcription. The web app only lets you download one at a time.
+So I built a CLI tool in Node.js (commander.js) that authenticates with saved browser
+credentials, lists all recordings, and batch-downloads the audio files along with
+their speaker diarization data (who spoke when).
 
-Added an accessibility snapshot tool for debugging the DOM structure.
-Chrome DevTools MCP integration for development.
+The interesting discovery was using accessibility tree snapshots instead of traditional
+HTML parsing. Instead of writing CSS selectors to navigate the web app's DOM (which
+changes frequently), I query the browser's accessibility tree. It gives you a clean,
+structured view of the page content that's much more stable than the underlying HTML.
+I'd used a11y trees for testing before but never thought to use them for data extraction.
 
-Short project but useful. The a11y snapshot approach was interesting --
-instead of parsing HTML, query the accessibility tree for structured content.
+Also integrated Chrome DevTools Protocol for development and debugging. Being able to
+inspect the live page state while the script runs made development much faster.
+
+This was a two-day project, but it's genuinely useful. The a11y snapshot approach is
+something I'll probably use again -- it's a nice pattern for any tool that needs to
+interact with web apps that don't have APIs.

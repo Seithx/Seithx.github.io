@@ -1,0 +1,30 @@
+Raw dev notes -- Jan-Feb 2026
+
+Not every week has a main quest. Sometimes the most productive thing you can do is
+chip away at the backlog of small tasks that have been piling up. Here's a roundup
+from a period where I bounced between a bunch of smaller projects.
+
+Electron Audio Converter:
+A desktop app I built for batch audio format conversion (MP3, WAV, FLAC, etc.).
+Found and fixed a bug where MP3 bitrate calculations were wrong when targeting a
+specific file size -- it was using the wrong formula for variable bitrate. Also
+regenerated the app icon with proper multi-resolution sizes. Windows is picky about
+its .ico files -- you need multiple resolutions embedded in one file or the icon
+looks blurry at certain display scales.
+
+Dev Environment Bootstrap:
+This one I'm excited about. Created a Python project template with everything I wish
+every project started with: structured JSON logging with both human-readable and
+machine-parseable formatters, environment-based config management, a CI workflow,
+VS Code settings with proper Python analysis, pyproject.toml instead of setup.py.
+The idea is to never set up these basics from scratch again. Already used it twice.
+
+GitHub Profile and Blog SEO:
+Updated my profile README, added an MIT license to the profile repo, set up og:image
+and meta keywords for the blog. Small things, but they matter for visibility when
+someone lands on your GitHub.
+
+The common thread: none of these felt productive in the moment, but looking back,
+this kind of steady maintenance is what keeps a portfolio healthy. It's the developer
+equivalent of cleaning your apartment -- doesn't feel exciting, but you notice when
+it's done.

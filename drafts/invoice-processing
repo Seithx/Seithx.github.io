@@ -1,0 +1,47 @@
+Raw dev notes -- March 2026
+
+Just shipped something I'm really proud of. A client's accounting team was drowning in
+manual data entry -- they receive dozens of supplier invoices per week as PDFs (via email,
+Google Drive, scanned copies). For each one, someone has to open the PDF, manually read
+the supplier name, invoice number, line items, amounts, VAT, and type it all into their
+ERP system. Then verify the totals match. It takes 15-30 minutes per invoice and it's
+mind-numbingly tedious work.
+
+I built a system that does this automatically with AI. The cool part: it runs entirely
+on Google Apps Script -- no servers, no deployment pipeline, no infrastructure to maintain.
+The accounting team already lives in Google Sheets, so the whole system sits inside their
+existing workflow.
+
+How it works:
+- A file watcher monitors their inbox folder for new PDFs
+- Gemini AI extracts structured data: supplier info, line items, amounts, dates
+- If the fast model (Flash) isn't confident, it automatically upgrades to a larger model
+- Results go into a spreadsheet the team already uses
+- The system generates export files in the exact format their ERP expects
+- I built a Hebrew web dashboard where the team can review and approve extractions
+
+The challenges were NOT what I expected:
+- Multi-invoice PDFs: some suppliers bundle 5+ invoices into one file. Had to detect that,
+  split them, extract unique invoice numbers, and merge rows for the same invoice.
+- The AI hallucinated dates. Like, completely made-up dates. Had to add validation ranges
+  and trigger re-extraction with the stronger model when dates look wrong.
+- Hebrew RTL rendering in the web dashboard was a headache. Right-to-left text layout
+  breaks in surprising ways when mixed with numbers and English text.
+- Apps Script has a 6-minute execution timeout. With dozens of invoices to process,
+  I had to build a checkpoint/resume system so processing continues across runs.
+- The ERP import format is extremely strict: specific tab delimiters, DD/MM/YY dates,
+  exact column positions. One wrong character and the import fails silently.
+
+I'm especially proud of the model fallback logic. Flash handles ~85% of invoices
+correctly. The ones it struggles with (bad handwriting, unusual layouts, multi-page)
+automatically escalate. I save both model responses for comparison so I can improve
+the prompts over time.
+
+What started as 'just parse some PDFs' turned into a full accounts-payable automation.
+The client went from 30 minutes per batch to a 5-minute review workflow. Classic scope
+creep, but the result genuinely saves them hours every week.
+
+This connects to something I've been thinking about a lot: AI doesn't need to be a
+fancy chatbot to be valuable. Sometimes the biggest impact is just removing tedious
+manual work from someone's day. The accounting team doesn't care about the AI -- they
+care that they don't have to squint at PDFs anymore.

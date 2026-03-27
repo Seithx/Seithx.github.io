@@ -1,0 +1,46 @@
+Raw dev notes -- Feb-March 2026
+
+I've been building knowledge bases for two different projects -- large collections of
+documents that get fed into an AI platform so users can ask questions and get accurate,
+sourced answers. The classic RAG (Retrieval-Augmented Generation) setup. But here's
+what nobody tells you about RAG: the hardest part isn't the retrieval or the generation.
+It's the data preparation. Garbage in, garbage out.
+
+The source documents I was working with were a mess. Scanned PDFs with OCR artifacts,
+inconsistent formatting, tables that didn't survive format conversion, duplicate content
+across files, irrelevant boilerplate sections. If you feed this raw into a knowledge
+base, the AI's answers are mediocre at best.
+
+So I built an LLM-powered cleanup pipeline. The idea: run every document through Gemini
+to clean up OCR errors, standardize formatting, and remove noise -- but with strict
+guardrails to prevent the AI from changing meaning or adding information.
+
+The pipeline:
+1. Standardize formats: PDF, DOCX, HTML all get converted to clean Markdown
+2. Assess RAG-readiness: score each document and flag problems
+3. Detect overlap: find duplicate or near-duplicate content across files
+4. LLM cleanup via Gemini with async concurrent chunk processing (for speed)
+5. Quality gate: reject any chunk where output exceeds 105% of input length
+6. Batch into upload-sized packages with proper heading separators
+
+That 105% quality gate was the most important decision. Without it, the LLM would
+helpfully 'improve' the text by paraphrasing and expanding -- exactly what you don't
+want when preparing reference material. I also had to explicitly tell the model NOT
+to reconstruct mathematical formulas, because it kept 'fixing' math notation that was
+actually correct in its original form.
+
+I also built a benchmark to compare different AI platforms on Hebrew-language questions
+with ground-truth answers. The differences in Hebrew handling were surprising -- some
+platforms clearly invested more in multilingual support than others.
+
+Technical gotcha that cost me hours: when processing multiple files sequentially with
+async code, you have to reset the Google SDK client between event loop runs. Otherwise
+you get obscure connection pool errors that look like network issues.
+
+At the end of this phase, I archived 75 one-off scripts that had accumulated during
+development. The cleanup was satisfying -- reducing a messy root directory to just
+the pipeline scripts and docs.
+
+This whole project reinforced my belief that AI-assisted workflows aren't about
+having a smart model. They're about building the right pipeline around the model --
+validation, quality gates, fallbacks, monitoring. The AI is just one step.

@@ -1,0 +1,32 @@
+Raw dev notes -- February 2026
+
+Wrapped up a shipping cost calculator for a logistics company. Their sales team was
+spending too much time looking up rates in Excel spreadsheets -- cross-referencing
+zone tables, weight brackets, surcharge rules. Slow and error-prone, especially for
+multi-item shipments where you need to calculate dimensional weight and check pallet
+thresholds.
+
+Built it as a React + TypeScript desktop app. You plug in package dimensions and weight,
+select a destination, and get an instant breakdown: base rate, surcharges, dimensional
+weight comparison, and a PDF quote ready to send to the customer. The app also gives
+smart tips -- like 'reduce one dimension by 3cm to avoid the oversized surcharge.'
+
+This month was mostly about hardening the codebase:
+- Broke the monolithic App.tsx into 6 focused components
+- Fixed all 52 TypeScript strict-mode errors (the codebase was 'any'-heavy before)
+- Wrote 74 tests with vitest covering different weight ranges, zones, and edge cases
+- Added localStorage persistence so the form state survives app restarts
+- Built a custom app icon for the Windows EXE build
+
+The pricing logic was the tricky part. Dimensional weight vs actual weight, pallet
+surcharges that kick in at specific thresholds, zone-based rate tables that change
+quarterly. Getting the business rules exactly right mattered -- one wrong calculation
+and the client quotes the wrong price to their customer.
+
+Struggles: ESLint v9 dropped during the refactor and broke the existing config. Spent
+way too long on that. Also, npm output in GitBash is unreliable when captured -- I had
+to redirect to temp files, which is a running theme on my Windows setup.
+
+Not the flashiest project, but there's something satisfying about building a tool that
+replaces a manual process with something instant and accurate. The 74-test suite gives
+me confidence that the pricing logic is correct, which is the whole point.
