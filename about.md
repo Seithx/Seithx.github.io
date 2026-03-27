@@ -29,6 +29,8 @@ Full-Stack AI/Data Engineer based in Israel. I build production-ready systems th
 
 **Tech:** Python, TypeScript, Google Cloud, Gemini AI, FastAPI, Flask, React, Electron, Playwright, Docker, PyQt6, ChromaDB, GitHub Actions
 
+**Contact:** [asaflecht@gmail.com](mailto:asaflecht@gmail.com)
+
 ---
 
 <div dir="rtl" lang="he">
