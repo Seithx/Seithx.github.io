@@ -86,7 +86,7 @@ def gemini_call(prompt, system_prompt):
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.1,
-            "thinkingConfig": {"thinkBudget": -1},
+            "thinkingConfig": {"thinkingBudget": -1},
         },
     }).encode()
 
