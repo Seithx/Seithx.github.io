@@ -130,7 +130,7 @@ def fetch_repos():
     repos = []
     page = 1
     while True:
-        batch = gh_api(f"users/{OWNER}/repos?per_page=100&page={page}&type=owner")
+        batch = gh_api(f"user/repos?per_page=100&page={page}&visibility=all&affiliation=owner")
         if not batch:
             break
         repos.extend(batch)
