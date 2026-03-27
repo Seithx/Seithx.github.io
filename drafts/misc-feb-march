@@ -1,18 +1,18 @@
-Raw dev notes -- Side Projects Roundup: Electron, Relixor, Profile Updates (Jan-Feb 2026)
+Raw dev notes -- Side Projects Roundup: Electron Apps, Mobile, and Dev Tooling (Jan-Feb 2026)
 
 Quick hits from smaller projects this period:
 
-Electron Audio Converter (rhgroup):
+Electron Audio Converter:
 - Fixed MP3 target-size bitrate calculation
-- Regenerated icon.ico with multi-resolution sizes
-- Compressed CLAUDE.md, added project tree
+- Regenerated app icon with multi-resolution sizes
+- Cleaned up project documentation
 
-Cheezos Video Compressor (rhgroup):
+Video Compressor (Electron):
 - Added file logging and fixed build script
-- Contributor guide and project docs
+- Wrote contributor guide
 
 Relixor (Android app):
-- Fixed GitHub Actions build_and_sign_release_apk workflow (two rounds of fixes)
+- Fixed GitHub Actions release build workflow (two rounds of debugging)
 - Updated README
 
 Dev Environment Bootstrap:
@@ -20,18 +20,15 @@ Dev Environment Bootstrap:
 - CI workflow, VS Code settings, MCP setup
 - pyproject.toml based setup
 
-Profile (Seithx):
-- Updated GitHub profile README
+GitHub Profile:
+- Updated profile README
 - Added MIT license
-- Blog SEO: og:image and keywords in _config.yml
+- Blog SEO: og:image and keywords
 
 Termux Android Media Tools:
-- Refactored setup.sh for clarity and SSH support
-- Added plan for Termux Android App Wrapper
-
-Joni Extension Reverse Engineering:
-- Added security analysis docs
-- Merged dev-test branch with findings
+- Refactored setup script for clarity and SSH support
+- Added plan for an Android app wrapper
 
 None of these were big projects on their own, but together they represent a lot of
-maintenance and polish across the portfolio.
+maintenance and polish across the portfolio. Sometimes the most productive days
+are the ones where you tie up loose ends.

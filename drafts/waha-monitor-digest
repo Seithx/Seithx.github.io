@@ -1,35 +1,33 @@
-Raw dev notes -- WAHA Monitor: Building a WhatsApp Intelligence System (March 2026)
+Raw dev notes -- Building a Messaging Monitor with AI Digests (March 2026)
 
-My WAHA monitor project exploded in scope this month. What started as a simple WhatsApp
-group monitor turned into a full intelligence pipeline: message forwarding, daily AI digests,
-newsletter ingestion, Docker hardening, and a lot of crash recovery.
+A side project of mine grew a lot this month. What started as a simple group message
+monitor turned into an information pipeline: message aggregation, daily AI-generated
+digests, newsletter ingestion, and a lot of operational hardening.
 
 Major features built:
-- Daily AI digest via Gemini: summarizes all monitored WhatsApp groups
-- Halacha digest: separate pipeline for religious content with dedup against previous digests
-- Email newsletter ingest via Gmail IMAP polling
-- Medium article pipeline: Gemini filter + Freedium fetch + TOON compression
-- Auto-forward digest to WhatsApp groups with randomized timing
-- Shabbat-aware scheduling (skip Fri 16:00 - Sat 21:00 Israel time)
-- Reminder system with persistence across container restarts
-- Pushover push notifications + QR code recovery on WhatsApp logout
+- Daily AI digest via Gemini: summarizes all monitored groups into a concise report
+- Separate digest pipeline for specialized content categories
+- Email newsletter ingestion via IMAP polling
+- Article filtering pipeline: LLM filter + content fetch + compression
+- Auto-forward digest to relevant groups with randomized timing
+- Schedule-aware processing (respects off-hours/holidays)
+- Reminder system with persistence across restarts
+- Push notifications for critical alerts (session loss, failures)
 
 Operational hardening:
-- Docker watchdog with crash forensics, disk/WAL/memory checks
-- Escalating Docker recovery (restart -> unregister WSL)
-- Non-blocking startup catch-up with forward lock
-- ChromaDB dedup: removed 2268 duplicate messages
-- Security: bound all ports to localhost only
-- Weekly group name refresh instead of startup-only
+- Docker watchdog with health checks and crash forensics
+- Escalating recovery (container restart -> service restart)
+- Non-blocking startup with catch-up for missed messages
+- Deduplication: cleaned up thousands of duplicate records
+- Security: bound all service ports to localhost only
 
 Struggles:
-- WAHA has 6 permanently failing groups with no upstream fix
-- Docker Desktop crashes required auto-restart detection
-- Sleep prevention on Windows was harder than expected (Modern Standby issues)
-- Digest catch-up after downtime needed careful checkpoint logic
+- Some message groups have permanently broken API responses -- no upstream fix available
+- Docker daemon crashes on Windows required auto-detection and restart
+- Sleep prevention on Windows was harder than expected
+- Catch-up after downtime needed careful checkpoint logic to avoid duplicates
 
-The system now runs 24/7 on my Windows machine with Docker, monitoring dozens of groups,
-filtering Medium articles, ingesting newsletters, and sending daily summaries. It's become
-my personal information hub.
+The system now runs 24/7, monitoring dozens of groups, filtering articles, ingesting
+newsletters, and sending daily summaries. It's become my personal information hub.
 
-Next: Raspberry Pi migration, admin API endpoints, Voyage embeddings.
+Next: Move to a dedicated low-power device, add admin API, better embeddings.

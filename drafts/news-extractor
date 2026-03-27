@@ -1,25 +1,26 @@
-Raw dev notes -- Hebrew News Extractor: Scraping 17 Israeli News Sites (Feb-March 2026)
+Raw dev notes -- Building a Hebrew News Article Extractor (Feb-March 2026)
 
-Built a web scraper/API that extracts article text from Israeli news websites. Started with
-a few sites, now supports 17 including Ynet, Haaretz, Israel Hayom, TheMarker, and Channel 14.
+Built a web service that extracts clean article text from Israeli news websites.
+Started with a handful of sites, now supports 17 including major outlets.
 Deployed on Google Cloud Run.
 
 The journey:
-- Started with newspaper4k but it fails on many Hebrew sites
+- Started with an off-the-shelf extraction library but it fails on many Hebrew sites
 - Built per-site CSS selector chains with fallback strategies
-- Added bot-protection bypass: Outbrain UA for Haaretz/TheMarker premium content
-- Cloudflare Turnstile became the biggest headache -- Channel 14 is still limited
+- Each site is a special snowflake: different content models, AMP pages, paywalled content
+- Had to handle various anti-bot protections on some sites
 
-Cloudflare battle:
-- cloudscraper v3 from GitHub master
-- Full browser fingerprint fallback
-- Ultimately routed through Cloudflare Worker proxy (browser-side fetch)
-- Some sites just can't be scraped from datacenter IPs
+Deployment challenges:
+- Cloud Run cold starts are annoying but acceptable for the use case
+- Some sites actively block requests from cloud/datacenter IPs
+- Tried multiple approaches: custom headers, proxy services, alternative endpoints
+- A few sites remain limited -- accepting that as a tradeoff
 
-Deployed as Cloud Run service with Docker. Cold starts are annoying but acceptable.
-Did two full rounds of selector audits -- found and fixed extraction bugs across 8 sites.
+Did two full rounds of selector audits across all supported sites.
+Found and fixed extraction bugs affecting about half of them.
 
-Struggle: every site is a special snowflake. DraftJS content models, AMP pages,
-paywalled content, different meta tag conventions. Each new site is a mini reverse-engineering project.
+The hardest part isn't the initial extraction -- it's maintenance. Sites redesign,
+change their markup, add new protection layers. Each new site is a mini
+reverse-engineering project.
 
-Next: Custom domain, more sites, maybe a Chrome extension version.
+Next: Custom domain, more sites, possibly a browser extension version.
