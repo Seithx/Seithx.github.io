@@ -2,14 +2,16 @@ title: "Asaf Lecht - Dev Blog"
 description: "Developer learning journal by Asaf Lecht (אסף לכט). AI automation, browser tooling, RAG pipelines, and Hebrew tech."
 url: "https://seithx.github.io"
 lang: "en"
-author:
-  name: "Asaf Lecht"
+author: "Asaf Lecht"
 og_image: 'https://seithx.github.io/assets/og-image.png'
 keywords: 'Asaf Lecht, אסף לכט, AI, Data Engineering, Python, TypeScript, Full-Stack, Automation, RAG, Hebrew, Developer Blog'
 theme: minima
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
+
+header_pages:
+  - about.md
 
 defaults:
   - scope:

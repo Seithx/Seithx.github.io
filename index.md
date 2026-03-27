@@ -27,7 +27,7 @@ description: "Developer learning journal by Asaf Lecht (אסף לכט). AI autom
 
 Full-Stack AI/Data Engineer in Israel. I build AI-powered automation and write about the process -- struggles, breakthroughs, and lessons learned.
 
-[About](/about/) | [GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
+[GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
 
 ---
 

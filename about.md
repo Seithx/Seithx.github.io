@@ -23,23 +23,13 @@ description: "About Asaf Lecht (אסף לכט) -- Full-Stack AI/Data Engineer ba
 }
 </script>
 
-# Asaf Lecht | אסף לכט
-
 Full-Stack AI/Data Engineer based in Israel. I build production-ready systems that replace manual workflows with AI-powered automation. This blog is my learning journal.
 
-## What I Work On
+**What I work on:** AI-powered invoice processing, manufacturing video analysis, RAG pipelines, browser automation for API-less web apps, and [Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf) (Chrome extension, 80+ users).
 
-- **AI-Powered Automation** -- Invoice processing with Gemini, video analysis for manufacturing, AI-generated daily digests
-- **Browser Automation** -- Persistent headless browser patterns for API-less web applications
-- **RAG Pipelines** -- Document cleanup and structuring for AI knowledge bases
-- **[Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf)** -- Chrome extension (80+ users) fixing Hebrew typing in ChatGPT, Claude, and Gemini
-- **Desktop Apps** -- Shipping calculators, audio/video converters, digital signage
+**Tech:** Python, TypeScript, Google Cloud, Gemini AI, FastAPI, Flask, React, Electron, Playwright, Docker, PyQt6, ChromaDB, GitHub Actions
 
-## Tech
-
-Python, TypeScript, Google Cloud, Gemini AI, FastAPI, Flask, React, Electron, Playwright, Docker, PyQt6, ChromaDB, GitHub Actions
-
-[GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht) | [Blog Home](/)
+[GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
 
 ---
 
