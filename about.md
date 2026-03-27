@@ -29,14 +29,16 @@ Full-Stack AI/Data Engineer based in Israel. I build production-ready systems th
 
 **Tech:** Python, TypeScript, Google Cloud, Gemini AI, FastAPI, Flask, React, Electron, Playwright, Docker, PyQt6, ChromaDB, GitHub Actions
 
-[GitHub](https://github.com/Seithx) | [LinkedIn](https://www.linkedin.com/in/asaflecht)
-
 ---
+
+<div dir="rtl" lang="he">
 
 ## בעברית
 
 שמי אסף לכט, מהנדס תוכנה ונתונים. אני מפתח מערכות AI לייצור, עיבוד מסמכים, ואוטומציה של דפדפן.
 
-פיתחתי את [Smart Hebrew RTL](https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf) -- תוסף לכרום עם מעל 80 משתמשים שמתקן כתיבה בעברית ב-ChatGPT, Claude ו-Gemini.
+פיתחתי את <a href="https://chromewebstore.google.com/detail/mceaejlgpljlmfmejpgfjmpolkehippf">Smart Hebrew RTL</a> -- תוסף לכרום עם מעל 80 משתמשים שמתקן כתיבה בעברית ב-ChatGPT, Claude ו-Gemini.
 
-תומך בפודקאסט [על המשמעות](https://mashma.net).
+תומך בפודקאסט <a href="https://mashma.net">על המשמעות</a>.
+
+</div>
