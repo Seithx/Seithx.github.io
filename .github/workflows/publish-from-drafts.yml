@@ -28,15 +28,16 @@ jobs:
             exit 0
           fi
           tz=Asia/Jerusalem
-          hh=$(env TZ=$tz date +%H)
           dow=$(env TZ=$tz date +%u)
-          echo "Now (IL): $(env TZ=$tz date -Iseconds)"
-          if [ "$hh" = "09" ] && { [ "$dow" = "2" ] || [ "$dow" = "5" ]; }; then
+          echo "Now (IL): $(env TZ=$tz date -Iseconds) | dow=$dow"
+          # Crons already restrict to Tue(2)/Fri(5). cancel-in-progress
+          # deduplicates the two DST crons. Only check day-of-week here.
+          if [ "$dow" = "2" ] || [ "$dow" = "5" ]; then
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             echo "Window open."
           else
             echo "proceed=false" >> "$GITHUB_OUTPUT"
-            echo "Not 09:00 $tz on Tue/Fri. Skipping."
+            echo "Not Tue/Fri. Skipping."
           fi
 
   publish:
