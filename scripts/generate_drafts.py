@@ -18,8 +18,6 @@ SKIP_REPOS = {
     "Seithx.github.io",
     "Seithx",
     "ojt-presentation-icons",
-    "smarthebrewrtl-extension-landing",
-    "smart-hebrew-rtl",
     "termux-android-media-tools",
     "dev-environment-bootstrap",
     "joni-extension-reverse-engineering",
