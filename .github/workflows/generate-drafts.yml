@@ -28,13 +28,15 @@ jobs:
             exit 0
           fi
           tz=Asia/Jerusalem
-          hh=$(env TZ=$tz date +%H)
           dow=$(env TZ=$tz date +%u)
-          if [ "$hh" = "08" ] && [ "$dow" = "7" ]; then
+          echo "Now (IL): $(env TZ=$tz date -Iseconds) | dow=$dow"
+          # Crons already restrict to Sunday(7). cancel-in-progress
+          # deduplicates the two DST crons. Only check day-of-week here.
+          if [ "$dow" = "7" ]; then
             echo "proceed=true" >> "$GITHUB_OUTPUT"
           else
             echo "proceed=false" >> "$GITHUB_OUTPUT"
-            echo "Not 08:00 IL on Sunday. Skipping."
+            echo "Not Sunday. Skipping."
           fi
 
   generate:
