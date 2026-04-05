@@ -1,0 +1,17 @@
+Raw dev notes -- The Great Recorder CLI Pivot
+
+Okay, so this project, the `google-recorder-cli`, is basically my attempt to bring the magic of Google Recorder's transcription and search capabilities to the command line. I use Recorder constantly, but I always wished I had more programmatic control – like being able to search my recordings from the terminal, or export transcripts in bulk. This is my personal quest to make that happen.
+
+This past week or so has been a whirlwind. I kicked things off with a deep dive into the underlying service's API. I spent a whole "live discovery session" just poking around, trying to map out every endpoint, every request, every response. It felt like being an archaeologist, digging through network requests to uncover ancient secrets. I managed to document a pretty full API surface, which felt like a huge win.
+
+But then came the hard truth. After all that discovery, it became clear that directly interacting with the API was going to be a nightmare. Authentication was complex, payloads were intricate, and it felt like I was constantly fighting against anti-bot measures. So, I made the tough call: a complete architectural rewrite for Phase 2-3. I pivoted to a "browser-as-runtime" approach, essentially using a headless browser to interact with the web interface, managed by a "watchdog" process. It feels a bit like admitting defeat on the direct API front, but it's a pragmatic solution to a very stubborn problem.
+
+With that major refactor out of the way, I also added a note to the TODO list about an API monitoring and testing strategy. Because if I'm going to rely on a web interface, I need to be ready for it to change. I also took some time to trim down the TODO list to a more public-friendly roadmap – gotta keep things focused.
+
+On the bug front, I squashed a classic: a hardcoded path in `snapshot-a11y.js`. Rookie mistake, but it's always satisfying to replace a brittle path with `os.tmpdir()`. It's the little things, right?
+
+Finally, I spent some time on the CLI experience itself. I've been looking at patterns from other great CLIs, like the `millionco/expect` style, and started incorporating some of those improvements. It's not just about making it work, it's about making it *feel* good to use. And, because I'm a stickler for details, I updated the author credits in the docs – even adding my Hebrew name, and then fixing it to clarify I *modified* it, not *built* the original service. Small stuff, but it matters.
+
+Honestly, the biggest struggle was the API wall. It was frustrating to spend so much time on discovery only to realize the direct approach was a dead end. But the pivot to "browser-as-runtime" felt like a creative workaround, even if it adds a layer of complexity I initially wanted to avoid. It's a reminder that sometimes the "ideal" solution isn't feasible, and you have to find a robust "working" solution. It felt good to adapt, rather than get stuck. And seeing the CLI start to feel more polished is always a boost.
+
+Next up: Implement core recording search and export functionality using the new architecture.
