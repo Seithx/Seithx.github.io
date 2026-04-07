@@ -1,0 +1,209 @@
+name: Publish cleaned blog post from drafts (Gemini 2.5 Flash)
+
+on:
+  schedule:
+    - cron: "0 6 * * 2,5"
+    - cron: "0 7 * * 2,5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - name: Check schedule window (DST-safe)
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          dow=$(env TZ=Asia/Jerusalem date +%u)
+          if [ "$dow" = "2" ] || [ "$dow" = "5" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Sweep processed drafts left behind
+        run: |
+          set -e
+          mkdir -p _posts archived_drafts
+          grep -Rho '^source_draft:\s*.*' _posts 2>/dev/null | while IFS= read -r line; do
+            d=$(sed -E 's/^source_draft:\s*"?([^"]+)"?/\1/' <<<"$line")
+            if [ -n "$d" ] && [ -f "$d" ]; then
+              git mv -f "$d" archived_drafts/ 2>/dev/null || mv "$d" archived_drafts/
+            fi
+          done
+
+      - name: Find latest unprocessed draft
+        id: draft
+        run: |
+          set -e
+          mkdir -p drafts
+          latest="$(find drafts -type f ! -name '*.lock' ! -name '.gitkeep' -printf '%T@ %P\n' | sort -nr | head -n1 | cut -d' ' -f2- || true)"
+          if [ -z "$latest" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "file=$latest" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Stop if no draft
+        if: steps.draft.outputs.skip == 'true'
+        run: echo "No drafts to publish."
+
+      - name: Lock draft
+        if: steps.draft.outputs.skip != 'true'
+        run: ln "drafts/${{ steps.draft.outputs.file }}" "drafts/${{ steps.draft.outputs.file }}.lock" 2>/dev/null || true
+
+      - name: Skip if already published
+        id: dup
+        if: steps.draft.outputs.skip != 'true'
+        run: |
+          mkdir -p _posts archived_drafts
+          pat="source_draft: \"drafts/${{ steps.draft.outputs.file }}\""
+          if grep -Rqs "$pat" _posts 2>/dev/null; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ 2>/dev/null || true
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check draft size
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        run: |
+          bytes=$(wc -c < "drafts/${{ steps.draft.outputs.file }}")
+          [ "$bytes" -gt 800000 ] && { echo "Too large"; exit 1; }
+
+      - name: Generate polished post with Gemini
+        id: llm
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}
+          DRAFT_FILE: ${{ steps.draft.outputs.file }}
+        run: |
+          set -e
+          [ -z "$GEMINI_API_KEY" ] && exit 1
+          today=$(date -u +"%Y-%m-%d")
+          tmp_out="$RUNNER_TEMP/out.json"
+
+          jq -Rs . < "drafts/$DRAFT_FILE" > "$RUNNER_TEMP/draft.json"
+          raw=$(cat "$RUNNER_TEMP/draft.json")
+
+          # System prompt with anti-AI writing rules
+          read -r -d '' SYSPROMPT << 'ENDPROMPT' || true
+          You are a concise editor for Asaf Lechts public developer learning log.
+
+          VOICE (preserve these, they are Asafs natural style):
+          - First person, casual, talking to developer peers
+          - Opinions and genuine reactions (felt amazing, Talk about fighting the OS!)
+          - Self-deprecating humor about debugging frustrations
+          - Specific technical details, not vague hand-waving
+          - Mixed sentence lengths, some short and punchy
+
+          ANTI-AI RULES (strictly enforced):
+          - Do NOT use em dashes. Rewrite with commas, periods, or parentheses.
+          - Do NOT start every bullet with **Bold Header:** followed by explanation. Mix formats: some bold, some plain, some starting mid-thought.
+          - Do NOT open with signposting (Here is the lowdown, Here is a quick rundown, Let me walk you through). Just start.
+          - Do NOT end with generic motivation (persistence pays off, the future looks bright, exciting times ahead). End with something specific.
+          - Do NOT inflate significance (groundbreaking, massive, truly robust, game-changing). Just say what happened.
+          - Do NOT use trailing -ing phrases for fake depth (highlighting, underscoring, symbolizing, reflecting).
+          - Do NOT force ideas into groups of three for rhetorical effect.
+          - Banned words: delve, tapestry, landscape (abstract), pivotal, crucial, vibrant, nestled, testament, underscore, showcase, foster, garner, interplay, intricate, enduring.
+          - Use sentence case for headings, not Title Case.
+          - Vary paragraph and bullet length. Not everything the same size.
+
+          FORMAT:
+          Turn raw notes into a short Markdown blog post (250-450 words) with: a sentence-case H1 title, a crisp intro, 3-6 bullet points for key learnings/struggles, a short reflection, and a one-line Next: at the end. On the VERY LAST LINE output exactly: Tags: tag1, tag2, tag3 (4-6 tags, comma-separated). Output valid Markdown only.
+          ENDPROMPT
+
+          body=$(jq -n \
+            --arg sys "$SYSPROMPT" \
+            --arg raw "$raw" \
+            '{
+              systemInstruction:{role:"system",parts:[{text:$sys}]},
+              contents:[{role:"user",parts:[{text:("RAW NOTES:\n"+($raw|fromjson))}]}],
+              generationConfig:{temperature:0.1,thinkingConfig:{thinkingBudget:-1}}
+            }')
+
+          for i in 1 2 3; do
+            curl -sf "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
+              -H "Content-Type: application/json" -d "$body" > "$tmp_out" && break || sleep $((i*5))
+          done
+
+          err=$(jq -r '.error.message // empty' "$tmp_out"); [ -n "$err" ] && { cat "$tmp_out"; exit 1; }
+          text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' "$tmp_out")
+          [ -z "$text" ] || [ "$text" = "null" ] && { echo "Empty output"; exit 1; }
+
+          title=$(printf '%s\n' "$text" | grep -m1 '^# ' | sed 's/^#\s*//' || true)
+          [ -z "$title" ] && title=$(printf '%s\n' "$text" | head -n1 | sed 's/^[#*]\s*//')
+          [ -z "$title" ] && title="Untitled"
+
+          tag_line=$(printf '%s\n' "$text" | grep -i '^[*_]*Tags:' | tail -n1 || true)
+          tags=""
+          if [ -n "$tag_line" ]; then
+            tags=$(printf '%s' "$tag_line" | sed -E 's/^[*_]*Tags:\s*//i; s/[*_]//g; s/\s*,\s*/, /g')
+          fi
+
+          printf '%s' "$title" > "$RUNNER_TEMP/title.txt"
+          printf '%s' "$tags" > "$RUNNER_TEMP/tags.txt"
+          slug=$(sed -E 's/[^a-zA-Z0-9]+/-/g; s/^-+//; s/-+$//' "$RUNNER_TEMP/title.txt" | tr '[:upper:]' '[:lower:]')
+          [ -z "$slug" ] && slug="post"
+          body_md=$(printf '%s\n' "$text" | awk 'NR==1 && /^# /{next} {print}' | sed '/^[*_]*Tags:/d')
+          safe_title=$(sed 's/"/\\"/g' "$RUNNER_TEMP/title.txt")
+          safe_tags=$(cat "$RUNNER_TEMP/tags.txt")
+
+          mkdir -p _posts
+          outfile="_posts/${today}-${slug}.md"
+          {
+            echo "---"
+            echo "layout: post"
+            printf 'title: "%s"\n' "$safe_title"
+            printf 'date: %s\n' "$today"
+            printf 'source_draft: "drafts/%s"\n' "$DRAFT_FILE"
+            [ -n "$safe_tags" ] && printf 'tags: [%s]\n' "$safe_tags"
+            echo "---"
+            printf '%s\n' "$body_md"
+          } > "$outfile"
+          echo "outfile=$outfile" >> "$GITHUB_OUTPUT"
+
+      - name: Archive used draft
+        if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
+        run: |
+          mkdir -p archived_drafts
+          git mv -f "drafts/${{ steps.draft.outputs.file }}" archived_drafts/ 2>/dev/null || mv "drafts/${{ steps.draft.outputs.file }}" archived_drafts/
+
+      - name: Unlock draft
+        if: always() && steps.draft.outputs.skip != 'true'
+        run: rm -f "drafts/${{ steps.draft.outputs.file }}.lock"
+
+      - name: Commit and push
+        if: steps.draft.outputs.skip != 'true'
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _posts/ archived_drafts/ drafts/
+          git diff --cached --quiet && { echo "Nothing to commit."; exit 0; }
+          git commit -m "Publish: ${{ steps.llm.outputs.outfile }}"
+          git pull --rebase origin main || git pull --no-rebase --no-edit origin main
+          git push
