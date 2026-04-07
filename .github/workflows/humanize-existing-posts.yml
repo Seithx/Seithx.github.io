@@ -1,0 +1,116 @@
+name: One-time humanize existing posts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  humanize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Humanize all posts
+        env:
+          GEMINI_API_KEY: ${{ secrets.GOOGLE_API }}
+        run: |
+          set -e
+          [ -z "$GEMINI_API_KEY" ] && exit 1
+
+          read -r -d '' SYSPROMPT << 'ENDPROMPT' || true
+          You are editing an existing blog post by Asaf Lecht. Your job is to remove AI-sounding patterns while preserving the posts meaning, structure, and personality.
+
+          WHAT TO FIX (only these patterns):
+          - Replace em dashes with commas, periods, or parentheses.
+          - If every bullet starts with **Bold Header:** followed by explanation, vary the format: keep some bold, make others plain or start mid-thought.
+          - Remove signposting openers (Here is the lowdown, Here is a quick rundown, Let me walk you through).
+          - Replace generic motivational endings (persistence pays off, the future looks bright) with something specific.
+          - Tone down inflated language (groundbreaking, massive upgrade, truly robust) to plain descriptions.
+          - Remove trailing -ing phrases used for fake depth (highlighting, underscoring, symbolizing).
+          - Replace banned words: delve, tapestry, landscape (abstract), pivotal, crucial, vibrant, nestled, testament, underscore, showcase, foster, garner, interplay, intricate, enduring.
+          - Convert Title Case headings to sentence case.
+
+          WHAT TO PRESERVE (do not change):
+          - The posts core message and all technical details.
+          - First-person voice, humor, and personality.
+          - Overall structure (intro, bullets, reflection, Next line).
+          - Approximate word count (do not expand or shrink significantly).
+          - The frontmatter (layout, title, date, source_draft, tags) must stay exactly as-is.
+          - If the post already sounds natural and has few issues, make minimal changes.
+
+          OUTPUT: Return the complete post including frontmatter. Valid Markdown only. No commentary.
+          ENDPROMPT
+
+          count=0
+          for post in _posts/*.md; do
+            [ -f "$post" ] || continue
+            filename=$(basename "$post")
+            echo "Processing: $filename"
+
+            jq -Rs . < "$post" > "$RUNNER_TEMP/post.json"
+            raw=$(cat "$RUNNER_TEMP/post.json")
+
+            body=$(jq -n \
+              --arg sys "$SYSPROMPT" \
+              --arg raw "$raw" \
+              '{
+                systemInstruction:{role:"system",parts:[{text:$sys}]},
+                contents:[{role:"user",parts:[{text:("EXISTING POST:\n"+($raw|fromjson))}]}],
+                generationConfig:{temperature:0.1,thinkingConfig:{thinkingBudget:-1}}
+              }')
+
+            success=false
+            for i in 1 2 3; do
+              if curl -sf "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
+                -H "Content-Type: application/json" -d "$body" > "$RUNNER_TEMP/out.json"; then
+                success=true
+                break
+              fi
+              sleep $((i*10))
+            done
+
+            if [ "$success" != "true" ]; then
+              echo "SKIP (API error): $filename"
+              continue
+            fi
+
+            err=$(jq -r '.error.message // empty' "$RUNNER_TEMP/out.json")
+            if [ -n "$err" ]; then
+              echo "SKIP (Gemini error): $filename -- $err"
+              continue
+            fi
+
+            text=$(jq -r '[.candidates[0].content.parts[]?.text] | join("\n")' "$RUNNER_TEMP/out.json")
+            if [ -z "$text" ] || [ "$text" = "null" ]; then
+              echo "SKIP (empty output): $filename"
+              continue
+            fi
+
+            # Strip markdown code fences if Gemini wrapped the output
+            cleaned=$(printf '%s\n' "$text" | sed '/^```markdown$/d; /^```yaml$/d; /^```$/d')
+
+            printf '%s\n' "$cleaned" > "$post"
+            count=$((count + 1))
+            echo "Updated: $filename"
+
+            # Rate limit: wait 3s between posts
+            sleep 3
+          done
+
+          echo "Humanized $count posts."
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _posts/
+          git diff --cached --quiet && { echo "No changes."; exit 0; }
+          git commit -m "style: humanize existing posts (remove AI writing patterns)"
+          git pull --rebase origin main || git pull --no-rebase --no-edit origin main
+          git push
