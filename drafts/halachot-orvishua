@@ -1,0 +1,19 @@
+Raw dev notes -- Building a Content Sync Pipeline: The Struggle with Large Files and CI
+
+Okay, so this past week was all about getting the `halachot-orvishua` project off the ground. Basically, the idea is to build a reliable pipeline to pull down and manage content related to Jewish law (halachot) from a specific online source, `orvishua.net`. The main goal is to have an automated system that checks for new content, downloads it, and then notifies me (or others) about what's changed, especially which "mega-files" need to be re-uploaded to their final destination. It's about keeping a local, updated copy and making sure we know what's fresh.
+
+This period was mostly about setting up the core infrastructure and figuring out the content flow. I started with the initial repo setup, getting a basic README in place with setup instructions and how to configure Gmail SMTP for notifications. A big early decision was to make this a "scripts-only repo," meaning the actual content itself wouldn't live in Git. Instead, it would be stored on Google Drive. This immediately led to some interesting challenges.
+
+One of the first hurdles was the CI. My initial CI setup tried to download content, which was a no-go given the "scripts-only" decision and the size of the content. Had to fix that pretty quickly to a "detect-only" mode where the workflow doesn't try to pull down the actual content. That was a bit of a facepalm moment, realizing I'd set up CI to do something I explicitly didn't want Git to manage.
+
+Then came the core logic: change detection and email notifications. I got the system to detect changes and, crucially, to specify *which* sources needed re-uploading and even *exactly which mega-files* were affected. This was a big win, as it's the whole point of the project – knowing what's new and what needs attention.
+
+The content management strategy evolved quite a bit. Initially, it was all about keeping content out of Git. But then I realized I needed *some* representation of the output in Git for tracking purposes, so I implemented syncing the output to a git-tracked directory. This felt like a compromise, but a necessary one. Later, I did a big reorganization, moving all scripts into a `scripts/` directory and all content (or at least the *output* content that *is* tracked) into a `content/` directory, cleaning up the project root. This felt much better, aligning with a pattern I've seen work well in other projects, using `new_content/` and a `content_index.json` to manage things more systematically. It's a constant battle between "keep it simple" and "make it robust for large, dynamic data."
+
+Finally, I got a successful sync run, pulling down 2 new Q&A items and confirming 0 new articles from `orvishua.net`. That was a satisfying little green checkmark.
+
+Honestly, the hardest part was wrestling with the content strategy. The initial thought of "scripts-only, content on Drive" seemed clean, but then the practicalities of CI, tracking changes, and needing *some* versioned output meant constantly re-evaluating. It felt like I was building the plane while flying it, making decisions, seeing them break, and then refactoring. The "mega-files" aspect really drove home that Git isn't always the right tool for *all* data, but you still need a way to track *metadata* about that data. It was a good reminder that architectural decisions are rarely one-and-done; they evolve as you understand the problem space better. Also, line endings. Always line endings. Had to add `.gitattributes` and normalize them to LF, because of course.
+
+Overall, it felt good to get the core loop working. It's a small project, but it touches on some fundamental data management and automation principles. It's a step towards building more reliable, self-maintaining systems, which is always a growth area for me.
+
+Next up: Refine the notification content and potentially add more robust error handling.

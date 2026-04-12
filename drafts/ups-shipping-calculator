@@ -1,0 +1,21 @@
+Raw dev notes -- Shipping Calculator: Bulk, Sessions, and AI Brain-Bending
+
+Okay, so this past sprint was a bit of a whirlwind for the shipping cost calculator project. Quick recap for anyone reading this later (or for my future self who's forgotten everything): this tool is basically a way for users to get a quick estimate on shipping costs. The idea is to make it super easy to plug in dimensions, weight, destination, and get a ballpark figure, helping them plan logistics or price products more accurately. It's been a pretty neat little project, growing from a simple form to something much more robust.
+
+This last batch of commits really pushed things forward. The big one was definitely adding **bulk scenarios**. Before, it was one calculation at a time, which was fine for quick checks, but totally impractical for anyone needing to price out a whole catalog or a big batch of orders. Now, users can upload a file or input multiple items at once, and the system crunches the numbers for all of them. This was a huge leap in usability.
+
+Alongside that, I had to implement **session changes**. This wasn't just about keeping a user logged in, but more about maintaining state for complex calculations. If someone's building up a multi-item shipment or tweaking parameters, we need to remember their choices across different steps or even if they navigate away and come back. It's all about making the user experience smoother and less frustrating.
+
+And then, the future is now, I guess – I added **Claude settings**. This is for integrating an AI model into the mix. Still early days on *exactly* how we'll leverage it, but the groundwork is there. Thinking about things like optimizing packaging suggestions, or maybe even helping refine shipping routes based on real-time data. Exciting, but also a bit daunting.
+
+Finally, a bit of dev hygiene: **normalized line endings** (because apparently, I'm still fighting that battle in 2024) and, more importantly, started building out **validation scripts**. With all these new features, especially bulk uploads, the potential for bad data or unexpected inputs skyrockets. These scripts are crucial for catching issues early and keeping the system stable.
+
+Honestly, the bulk scenarios were a beast. Getting the data parsing right, handling errors gracefully for individual items within a large upload, and then making sure the UI could actually *display* all those results without melting down – that was a proper head-scratcher. I spent way too long debugging a weird off-by-one error in a loop that only manifested with exactly 17 items. Seventeen! Why 17? Who knows. It felt like I was wrestling an octopus in a phone booth.
+
+The session management also threw a few curveballs. There's always that delicate balance between making things persistent enough for the user but not over-complicating the backend or introducing security risks. I had a moment where I thought I'd lost all my test data because of a misconfigured session store, and my heart definitely skipped a beat.
+
+Integrating the AI settings was surprisingly straightforward on the initial setup, but I know the real challenge will come when I start actually *using* the API and trying to get useful, consistent output. It's a whole new world of prompt engineering and understanding AI limitations.
+
+Overall, it felt good to tackle some bigger architectural challenges. Moving from single-item processing to bulk really forced me to think about scalability and robust error handling in a way I hadn't needed to before. It was frustrating at times, but seeing those bulk calculations fly through and the results pop up was genuinely satisfying. It's a reminder that even when things feel impossible, breaking them down and chipping away eventually gets you there. I'm definitely growing in my ability to anticipate edge cases and design for more complex user flows.
+
+Next up: Diving deeper into the AI integration and seeing what magic Claude can do.
