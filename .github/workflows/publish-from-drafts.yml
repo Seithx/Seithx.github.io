@@ -92,7 +92,7 @@ jobs:
         if: steps.draft.outputs.skip != 'true' && steps.dup.outputs.already != 'true'
         run: |
           bytes=$(wc -c < "drafts/${{ steps.draft.outputs.file }}")
-          [ "$bytes" -gt 800000 ] && { echo "Too large"; exit 1; }
+          if [ "$bytes" -gt 800000 ]; then echo "Too large"; exit 1; fi
 
       - name: Generate polished post with Gemini
         id: llm
