@@ -1,0 +1,27 @@
+Raw dev notes -- RAG, Deadlocks, and Self-Healing Data
+
+This "Personal Information Hub" project is basically my attempt to build a second brain, but one that actually *works* for me. The idea is to pull in all my scattered notes, messages, articles, whatever, and make them searchable and summarizable. Like having a personal AI assistant that knows *my* stuff, not just the internet's.
+
+This past week or so was a pretty big push. The main win was getting the RAG (Retrieval Augmented Generation) query feature live. This is huge! It means I can actually ask questions about my own data – like, "What did I note about X last month?" – and get a coherent summary back. It's not just keyword search anymore; it's understanding context. I've got it hooked up to specific "groups" of info, so I can target my queries.
+
+On the backend, I spent some time shoring up the ChromaDB vector store. Added a safety rule for restoring it, because, well, you don't want to lose your embeddings. Trust me on that one.
+
+Then came the bug hunt. Oh boy. The HNSW backfill deadlock was a real nightmare. Debugging concurrent operations in a vector index is like trying to catch smoke. It was causing the system to just freeze up sometimes when trying to process new data. Also squashed a bug where queries were sometimes getting delivered twice, which was just annoying. And a super specific one: fixing some weird formatting issues for halacha-related WhatsApp messages. Real-world data is always messier than you think.
+
+I also focused a lot on making the system more robust. Now it always drains its processing queue on startup, which prevents old, stale tasks from hanging around. But then I realized just draining wasn't enough – what if something *got skipped* during that drain? So I added an auto-recovery mechanism for skipped records. It's a self-healing thing, which feels pretty advanced for my little project!
+
+And, just to keep things moving, I started scaffolding out a Text-to-Speech (TTS) sidecar. Just the bare bones, but it's the first step towards getting audio output from the summaries.
+
+That HNSW deadlock was definitely the hardest part. It took a solid chunk of time just to pinpoint *why* it was happening. It's a good reminder that even with well-established libraries, concurrency can bite you hard. You think you've got it, then boom, everything grinds to a halt.
+
+The whole "drain queue on startup" -> "auto-recover skipped records" sequence was a bit of an unexpected journey. It really highlighted how important it is to think through failure modes and recovery paths. It's not enough to just clear the slate; you need to ensure nothing important was lost in the process. It's a constant battle for data integrity, and it's surprisingly complex to get right.
+
+The WhatsApp formatting fix was a small thing, but it just reinforced how much specific, messy data handling is involved in these kinds of projects. You can't just throw raw text at an LLM and expect magic; you need to clean and structure it.
+
+Honestly, getting RAG working felt like a huge milestone. It's the core of what I envisioned for this project, and seeing it actually answer questions about *my* life is incredibly cool and a bit surreal. It makes all the debugging headaches worth it.
+
+The bug fixes, especially the deadlock, were frustrating in the moment, but there's a real sense of accomplishment when you finally crack a tough one. Each bug feels like a mini-lesson in system design and debugging. I'm definitely getting better at tracing complex issues.
+
+I'm learning so much about building resilient systems. It's not just about adding features, but about making sure the whole thing can stand on its own, recover from hiccups, and maintain data integrity. That self-healing aspect feels like a big step up in the maturity of the project. It's a constant push-and-pull between building new, exciting stuff and shoring up the foundations, and I'm realizing how crucial the latter is.
+
+Next up: fully integrate TTS and start exploring more diverse data sources.
