@@ -1,0 +1,24 @@
+Raw dev notes -- The Document Bidi & Conversion Gauntlet
+
+**Project Background:**
+This project, Weaverai_Agents_MCP, is essentially a core backend service designed to handle complex document processing and conversion tasks. It's meant to be the "Master Control Program" for various AI agents or automated workflows that need to interact with, transform, and understand different document formats. The goal is to provide robust, reliable document manipulation capabilities, especially for internationalized content.
+
+**What was done:**
+This past week was a deep dive into document handling, particularly around Right-to-Left (RTL) language support and document conversions.
+
+The biggest chunk of work was getting RTL/LTR bidirectional (bidi) text handling absolutely solid. I started with implementing a full 6-layer bidi handling based on the latest docx spec, which I thought would be enough. But nope, it was just the beginning. I had to go back and strip `w:rtl` from paragraph-level `rPr` (run properties) too, not just individual runs, which was a subtle but important fix. Then came the real fun: fixing RTL by adding `rtl` to `rPrDefault` and `bidi` to the `Normal` style, and flipping `jc=left` (justification) for RTL paragraphs. Upgrading the compatibility mode to Word 2013+ was crucial for proper RTL bidi support – older modes just didn't cut it. The most infuriating part was realizing that OOXML element order matters: I had to insert `bidi/jc` *before* `rPr` in `pPr` (paragraph properties) for it to actually take effect. Finally, I had to match a reference Hebrew document exactly, which meant realizing `sectPr bidi` wasn't needed, `jc=right` was actually wrong, and ensuring the Arial font was applied correctly. It was a lot of fiddly XML work.
+
+On the conversion front, I added a new `/convert` endpoint. Initially, this was just for `.doc` to `.docx` conversions, with automatic extension detection in the workflow. Later, I extended this to include PDF support. That PDF conversion wasn't straightforward either; I had to specifically use the `impress_pdf_import` filter for LibreOffice to get it working reliably.
+
+Beyond document specifics, I also set up some infrastructure for remote management. This included adding a `deploy-service n8n proxy` and documenting the remote deploy pattern, which makes it much easier to push updates. I also added an `/exec` endpoint for restricted shell commands on the pod, which is super useful for debugging or specific admin tasks without full shell access. Documenting the `exec-service proxy` and the full remote admin pattern was key for future maintainability.
+
+**What was hard or surprising:**
+RTL, hands down, was the hardest part. I knew internationalization was complex, but the sheer number of places you have to touch in OOXML (paragraph properties, run properties, default styles, compatibility settings, *and* element order) just to get basic bidi right was mind-boggling. It felt like playing whack-a-mole with XML attributes. The element order issue was a real head-scratcher and took a while to debug. It's a testament to how fragile and specific document formats can be.
+
+The PDF conversion also had its moments. You'd think converting to PDF would be a standard library call, but getting the right LibreOffice filter (`impress_pdf_import`) was a specific detail I had to dig for. It's a reminder that even with powerful tools, you often need to understand their internal workings.
+
+**Personal reflection:**
+This period felt like a real grind, but also incredibly satisfying. There were moments of pure frustration, especially with the RTL issues. I felt like I was constantly chasing down obscure XML attributes and trying to understand why a document rendered one way in Word and another way after my processing. It really hammered home how much hidden complexity there is in what seems like a simple "document." But seeing those Hebrew documents finally render perfectly, matching the reference, was a huge win. It taught me a lot about the nitty-gritty of document standards and the importance of meticulous attention to detail, especially when dealing with internationalization. It also reinforced the idea that sometimes, you just have to get your hands dirty with the underlying tech (like LibreOffice filters) rather than hoping for a magic bullet. It's a good reminder that even as we build "smart" agents, the foundational data handling has to be rock solid.
+
+**What's next:**
+Integrating these robust conversion and bidi capabilities into more complex agent workflows.

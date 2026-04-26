@@ -1,0 +1,15 @@
+Raw dev notes -- The PDF Extraction Saga Continues (and Conquers?)
+
+Okay, so this past week has been a wild ride, mostly deep in the trenches of PDF parsing and data reconciliation for the Shipping Tracking Dashboard. The whole point of this project is to give us a clear, actionable view into our shipping costs. We're trying to pull data from carrier invoices, compare it against our internal billing logic, and integrate with carrier APIs to make sure we're not overpaying and can track everything efficiently. It's all about transparency and cost control.
+
+This sprint was a huge push on the data extraction front. I finally hit 100% accuracy on the invoice PDF extraction pipeline, which felt like a massive win. Not just category accuracy, but full row extraction, which is crucial for the billing comparison feature. Getting `pdfplumber`'s lattice extractor to nail all the financial fields, even with weird formatting, was a beast. I also got the UPS.com API integrated, which is a big step towards real-time tracking and data validation.
+
+But man, it wasn't easy. "Accurate per-row fuel and misc — no more scaling artifacts" sounds simple, but that was a headache. Initial calculations were off by tiny fractions that compounded, making the whole comparison useless. Then there was the nightmare of "overflow invoice support." You know, when a table spans multiple pages? Getting the "overflow total alignment via greedy matching" to work consistently felt like wrestling an octopus. And don't even get me started on the "ZONELIST section header matches calculator parser" fix – turns out our internal calculator had a slightly different header name than the invoices, which broke everything until I found it.
+
+The internationalization stuff was a curveball too. Dealing with "correct surcharge code names from Hebrew text" and then realizing Excel needed a "UTF-8 BOM TSV" to display Hebrew correctly was a fun little detour. It's always something you don't expect until you're knee-deep in it. And the `code 158 = dedicated_taxi_sameday` fix? That was a classic "is this a bug or a feature?" moment that required user confirmation.
+
+I also spent a good chunk of time reorganizing the codebase. It was getting a bit unwieldy, so I split it into `dashboard/` and `scripts/` with subfolders for `api`, `signals`, `baselines`, `billing`, and `extraction`. It feels much cleaner now. And I updated `CLAUDE.md` (my personal project documentation) to version 4.0, with a full file map and descriptions for every script. It's a lot of work, but future me will thank current me.
+
+Honestly, there were moments I wanted to pull my hair out, especially with the PDF parsing. It's such a brittle process. But seeing those "100% accuracy" commits go in, knowing I've wrangled these messy PDFs into clean, usable data, is incredibly satisfying. It feels like a real level-up in my data extraction skills, and a testament to just sticking with it, even when it feels impossible. It's a reminder that complex problems are just a series of smaller, solvable ones.
+
+Next up: Building out the actual dashboard views for this data.

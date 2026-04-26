@@ -1,0 +1,17 @@
+Raw dev notes -- Taming the Bill Beast: My DHL Dashboard Journey
+
+So, this new project, the 'MyBill Dashboard' for a major logistics provider (let's call them 'The Big Shipper'), is all about making sense of our billing data. Before this, it was a manual slog, downloading PDFs, trying to reconcile invoices against our internal records. The goal is to automate that whole process, pull the data, and present it in a digestible dashboard so we can actually *see* what's going on with our shipping costs without tearing our hair out.
+
+This week was pretty much the initial sprint. Got the basic framework up and running – that's the 'Initial commit' part. The real work started immediately with getting the data sync working. The core idea is to log into their portal, grab the latest billing info, and bring it into our system.
+
+The first big hurdle was getting the session management right. Their portal uses cookies, naturally, and keeping those fresh and valid was a pain. Especially when running the sync process in a remote desktop environment (RDP). Had to really dig into how their auth flow worked to ensure the cookies weren't expiring mid-sync or getting invalidated. That was the 'Fix cookie refresh' commit.
+
+Then, it was all about making the sync robust. You know, the kind of stuff that makes you feel like a proper engineer, not just a coder. Added a PID lockfile to prevent multiple instances of the sync script from running at once – because nothing's worse than two processes fighting over the same data or resource. Also put in some 'crash guards' to make sure if something *does* go wrong, it fails gracefully and doesn't leave things in a half-baked state. And, of course, clearer labels for logging and status updates, because future me will thank current me for that.
+
+The RDP environment thing was a real curveball. I've worked with remote servers before, but something about the specific setup, maybe network latency or how sessions are managed, made the cookie refresh super finicky. It wasn't just a simple `requests.Session()` and forget it. Had to implement more aggressive retry logic and really monitor the cookie lifecycle. It felt like chasing a ghost for a bit.
+
+Also, the need for the PID lockfile and crash guards came up quicker than I expected. It's one of those 'best practices' you know you *should* do, but often defer. But with a critical data sync, especially one that might run on a schedule, it became clear very fast that robustness had to be baked in from day one. It's easy to forget how fragile automated processes can be until they start failing in weird ways.
+
+Honestly, it felt good to get this off the ground. There's a certain satisfaction in taking a completely manual, frustrating process and starting to automate it. It's not just about writing code; it's about solving a real-world pain point. The initial struggles with the RDP environment and the cookie refresh were frustrating, but also a good reminder that real-world systems are messy. It's never just a clean API call. You have to deal with the quirks, the legacy, the specific environment. It pushed me to think more defensively about the code and anticipate failure points, which is definitely a growth area for me. I tend to focus on the happy path first, but this project is forcing me to consider the 'unhappy' paths much earlier.
+
+Next up: getting the actual data parsing and storage implemented.
