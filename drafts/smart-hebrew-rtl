@@ -1,0 +1,15 @@
+Raw dev notes -- Whack-a-mole with Claude's DOM
+
+Okay, so this `smart-hebrew-rtl` project is my little passion project, a browser extension I built because, frankly, AI chat interfaces (specifically Claude.ai, in this case) are terrible at handling right-to-left languages like Hebrew. It's a small quality-of-life tool that injects some CSS and JS to force proper RTL display, making conversations much more readable for me and a few others who use it.
+
+This past week was a bit of a scramble. The main thing was fixing `v2.2.4`. Claude.ai, in its infinite wisdom, decided to completely restructure their chat interface's underlying HTML. Classic. This meant all my carefully crafted CSS selectors and JavaScript hooks were suddenly pointing at nothing, rendering the extension completely useless. So, the bulk of the work was diving back into the developer tools, figuring out the new DOM structure, and updating all the selectors to match. It was a bit of a treasure hunt, trying to find the new `div`s and `span`s that held the text I needed to manipulate.
+
+Once the core fix was in, it was the usual release dance. I updated the store description to reflect the "Claude DOM selector refresh" – trying to make it sound more professional than "Claude broke everything again." I also bumped the internal `dev-workspace` version and refreshed the update banner in the extension's popup, so users would know there was a new version available and hopefully update quickly.
+
+A small win for future me was finally getting around to documenting a proper release checklist. I created `CLAUDE.md` and jotted down all the steps I usually forget when pushing a new version. Then, almost immediately, I went back and compressed it into a pipe-delimited form because, let's be real, I'm not going to read a paragraph for each step. Gotta keep it concise for my future, lazy self.
+
+The hardest part was definitely the initial "oh, for crying out loud, it's broken *again*" moment. It's incredibly frustrating when an external service changes its DOM structure without warning, completely invalidating your work. It feels like building a sandcastle only for the tide to come in and rearrange all your carefully placed turrets. It's a constant reminder of how fragile browser extensions can be when they rely on the internal structure of third-party websites. The surprising thing wasn't *that* it broke, but how quickly these platforms iterate and break things. You fix one thing, and a week later, something else shifts.
+
+Honestly, it felt a bit like playing whack-a-mole. Just when I think I've got everything stable, another issue pops up. But there's also a quiet satisfaction in getting it working again, knowing that I've restored a small piece of sanity for myself and other Hebrew speakers. It reinforces the lesson about building resilient code, even when the environment isn't. And that checklist? That's a small step towards being more organized, even for a tiny side project. It's about building good habits, even for the small stuff.
+
+Next up: Keep an eye on Claude for the next breaking change.

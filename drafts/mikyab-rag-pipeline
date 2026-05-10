@@ -1,0 +1,22 @@
+Raw dev notes -- Automating the RAG Brain: Syncs, Deploys, and Taming the Beast
+
+**Project Background:**
+Okay, so this "RAG Knowledge Base Pipeline" project is basically my attempt to build a robust, automated system for ingesting content from a specific online source (let's call it `the-source.net`) and turning it into a knowledge base for a Retrieval Augmented Generation (RAG) system. The goal is to keep the RAG model updated with the latest posts, Q&A, and transcripts, making it a living, breathing brain for answering questions based on our own content.
+
+**What was done in this period:**
+This past week or so has been a whirlwind of getting the pipeline truly robust and automated. A huge chunk of work went into **synchronization**. I finally got the system to reliably detect new Q&A items from `the-source.net` by sniffing around its sitemap – that was a big win. We had a few days with zero new posts, but a steady stream of Q&A, sometimes just a few, sometimes a massive dump of 800+ items. There was one frustrating day where a 2FA stall meant I had to manually kick off a sync, which reminded me how much I hate manual steps. I also added tooling to backfill older Q&A and even re-fetch some with fresher comments, which is great for data quality.
+
+**Deployment** got a massive overhaul. I built out a `setup.sh` script and a full server-migration playbook, which is huge for portability. The big one, though, was getting **self-installing daily auto-deploys** working on both Windows and Linux. That felt like magic when it finally clicked. I also set up a **multi-target deploy pattern**, specifically for creating a "no-copyrighted-books" variant of the RAG notebook. This is crucial for different use cases and legal considerations. To make deployments safer, I implemented **ID-diff upload verification** and an **orphan sweep** to clean up old content, plus an `--ignore-pattern` to protect any hand-uploaded source files from being overwritten or deleted. Had to fix a `continue-on-error` for some chatwrapper failures and extend a `list_sources` timeout from 30s to 90s with a backoff, because sometimes the external API just takes its sweet time.
+
+On the **documentation** front, I wrote up a "portable RAG lessons" guide and a full "porting guide" to help anyone replicate this stack. I also did a comparison of different RAG frameworks (RAGflow, RAG-Anything, LightRAG) and updated our internal changelog and user guide stats. Clarified the transcript counts – 138 series, 1515 lessons – which is a lot of content!
+
+Finally, I added **transcript-specific tooling** to build and copy scripts for hand-uploaded series, and documented how to recover transcripts. Oh, and a small but important fix: `self-heal url frontmatter` from `<link rel=canonical>` tags, because the source data isn't always perfectly consistent.
+
+**What was hard or surprising:**
+The 2FA stall was a real pain, highlighting a weak point in the automation. It's a reminder that external systems often have human-centric security measures that break machine-driven workflows. The `list_sources` timeout issue was also a classic "it works on my machine" problem that only showed up in production under load. It's always a battle against network latency and API slowness. Managing the different deployment targets (full vs. no-books) added a layer of complexity I hadn't fully anticipated, requiring careful `--ignore-pattern` logic. And the `self-heal url frontmatter` fix was a good example of how you have to build resilience against imperfect data sources.
+
+**Personal reflection:**
+This period felt like a huge leap forward in maturity for the project. I've been pushing hard to make this pipeline truly hands-off, and seeing the daily auto-deploys just *work* is incredibly satisfying. It's a testament to the power of automation and how much time it can save in the long run, even if it's a pain to set up initially. I'm learning so much about building robust, fault-tolerant systems, especially when dealing with external APIs and inconsistent data. It feels good to be building something that's not just functional, but resilient. It's like I'm building a little digital gardener for our knowledge base, constantly tending to it.
+
+**What's next:**
+Tackle that `TODO #16` – figuring out TOTP for fully unattended 2FA.
