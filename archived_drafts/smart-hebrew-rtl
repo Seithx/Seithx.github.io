@@ -1,31 +1,15 @@
-Raw dev notes -- The Deep Dive into RTL and AI Platforms
+Raw dev notes -- Whack-a-mole with Claude's DOM
 
-**1. Project & Why:**
-Okay, so this project, `smart-hebrew-rtl`, is my attempt to make using AI chat platforms (like the big ones, you know) a lot smoother for Hebrew speakers. The goal is to intelligently apply Right-to-Left (RTL) formatting where it's needed, without messing up English content or breaking the UI. It's a browser extension, and it's been a real challenge because these platforms are constantly changing their DOM.
+Okay, so this `smart-hebrew-rtl` project is my little passion project, a browser extension I built because, frankly, AI chat interfaces (specifically Claude.ai, in this case) are terrible at handling right-to-left languages like Hebrew. It's a small quality-of-life tool that injects some CSS and JS to force proper RTL display, making conversations much more readable for me and a few others who use it.
 
-**2. What was done:**
-This past week was a whirlwind, pushing out three versions (2.2.1, 2.2.2, 2.2.3) in rapid succession.
-A huge chunk of work went into refining the core CSS injection logic. I added a "manifest CSS injection" with "retry backoff" and even a "triple-apply after streaming" mechanism. This was crucial for handling the super dynamic content on some platforms, especially one particular one that streams content in chunks. I also optimized this, realizing that not *all* platforms need the streaming CSS, so I removed it from a few to keep things lean.
+This past week was a bit of a scramble. The main thing was fixing `v2.2.4`. Claude.ai, in its infinite wisdom, decided to completely restructure their chat interface's underlying HTML. Classic. This meant all my carefully crafted CSS selectors and JavaScript hooks were suddenly pointing at nothing, rendering the extension completely useless. So, the bulk of the work was diving back into the developer tools, figuring out the new DOM structure, and updating all the selectors to match. It was a bit of a treasure hunt, trying to find the new `div`s and `span`s that held the text I needed to manipulate.
 
-A major new feature was "Deep Research RTL." This involved tackling sandboxed `data: URI` iframes, which was a beast. Initially, I tried rewriting the `src`, but that was a no-go. The fix involved injecting directly into the `contentDocument`. This opens up a whole new level of RTL support for embedded content. I also expanded the manifest to include `oaiusercontent.com` for this.
+Once the core fix was in, it was the usual release dance. I updated the store description to reflect the "Claude DOM selector refresh" – trying to make it sound more professional than "Claude broke everything again." I also bumped the internal `dev-workspace` version and refreshed the update banner in the extension's popup, so users would know there was a new version available and hopefully update quickly.
 
-I also squashed some annoying bugs: English content getting forced RTL on one platform's AI Studio, and a sidebar navigation issue. Input fields got some love too, moving from `dir=auto` to `dir=rtl` for better consistency, and then a big win with "native keyboard control + smart input RTL" (a `unicode-bidi` fix) in v2.2.3, which is a huge usability boost.
+A small win for future me was finally getting around to documenting a proper release checklist. I created `CLAUDE.md` and jotted down all the steps I usually forget when pushing a new version. Then, almost immediately, I went back and compressed it into a pipe-delimited form because, let's be real, I'm not going to read a paragraph for each step. Gotta keep it concise for my future, lazy self.
 
-Beyond the code, there was a ton of documentation and marketing prep. I updated `CLAUDE.md` (my internal dev notes) with all the new injection strategies and TODOs. I also spent a *lot* of time crafting social media posts for the launches, iterating through multiple drafts to focus on unique features, user benefits, and avoiding competitor bashing. Privacy policy links were added and moved around to be more visible.
+The hardest part was definitely the initial "oh, for crying out loud, it's broken *again*" moment. It's incredibly frustrating when an external service changes its DOM structure without warning, completely invalidating your work. It feels like building a sandcastle only for the tide to come in and rearrange all your carefully placed turrets. It's a constant reminder of how fragile browser extensions can be when they rely on the internal structure of third-party websites. The surprising thing wasn't *that* it broke, but how quickly these platforms iterate and break things. You fix one thing, and a week later, something else shifts.
 
-And the research! I did deep dives into competitor extensions, analyzing their techniques (like `KaTeX protection`, `IntersectionObserver`, `adaptive settle logic`). I also started a market research doc to understand demand better. This involved extracting selector inventories from platforms using CDP and analyzing how other extensions handle complex DOM structures. I even set up a minified build pipeline.
+Honestly, it felt a bit like playing whack-a-mole. Just when I think I've got everything stable, another issue pops up. But there's also a quiet satisfaction in getting it working again, knowing that I've restored a small piece of sanity for myself and other Hebrew speakers. It reinforces the lesson about building resilient code, even when the environment isn't. And that checklist? That's a small step towards being more organized, even for a tiny side project. It's about building good habits, even for the small stuff.
 
-**3. What was hard or surprising:**
-The biggest struggle was definitely the "Deep Research RTL" feature and those sandboxed iframes. It felt like hitting a brick wall trying to get CSS into them. The `src` rewrite attempt was a dead end, and figuring out `contentDocument` injection took a lot of trial and error. It's a reminder that browser extension development often means fighting against the browser's security models in a good way.
-
-Another surprising challenge was the sheer amount of iteration needed for the social media posts. I thought it would be quick, but getting the messaging right – balancing technical depth with user-facing benefits, avoiding competitive negativity, and ensuring it was all in Hebrew – was a mini-project in itself. It really highlighted the difference between "building it" and "telling people about it."
-
-The dynamic nature of these AI platforms is a constant battle. The "retry backoff" and "triple-apply" mechanisms are a testament to how often elements might not be ready or might get re-rendered. It's like trying to paint a moving train.
-
-**4. Personal Reflection:**
-This period felt incredibly intense, almost like a sprint. Pushing out three versions in a few days, each with significant updates, was exhausting but also really satisfying. There were moments of pure frustration, especially with the iframe injection, where I questioned if it was even possible. But then, getting it to work, seeing the Hebrew text flow correctly in those tricky areas, felt like a huge win.
-
-I'm learning so much about advanced DOM manipulation, browser extension architecture, and even a bit about product marketing. It's not just about writing code; it's about understanding the user's pain points, anticipating platform changes, and communicating the value. The constant research into competitor extensions and platform internals feels like detective work, which I secretly enjoy. It's pushing me to think beyond just "make it work" to "make it robust, maintainable, and truly smart."
-
-**5. What's next:**
-More advanced DOM techniques and continued platform monitoring.
+Next up: Keep an eye on Claude for the next breaking change.
