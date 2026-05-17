@@ -1,0 +1,17 @@
+Raw dev notes -- "Taming the Talmud with RAG: A Week of Data, Docs, and Dopamine"
+
+Okay, this past week has been a whirlwind. The project, `gemara-page-rag-experiment`, is all about building a Retrieval Augmented Generation (RAG) system to make the Gemara (Talmud) more accessible. Imagine being able to ask complex questions about these ancient texts and get coherent, referenced answers. It's a huge challenge because the text is dense, multi-layered, and full of intricate discussions. My goal is to build a system that can understand and navigate this complexity.
+
+This period was intense, packed into just a few days. I kicked things off by diving deep into the structure of a "sugya" – a thematic unit in the Gemara. This involved a lot of research into how these discussions are bounded, how they nest, and how they parallel each other. This understanding is crucial for effective retrieval.
+
+Then came the core RAG work. I set up an initial proof-of-concept (v0) using a specific RAG approach, applying lessons learned from previous experiments, like using per-line tags and Sefaria topics. I expanded the content to include commentaries like Rashi and Tosafot, and made sure the text structure (like reference headings) was preserved. A big part of this was also handling both English and Hebrew texts, which meant splitting evaluations by language and ensuring parallel file structures.
+
+A massive chunk of time went into data. I collected hundreds of real Gemara questions from various sources, including Hebrew questions from otzar.org. The biggest win here was building out a substantial corpus for Bava Batra (2a-25b) and, crucially, creating a gold standard dataset. This involved downloading 87 Toshba questionnaire PDFs and then building a Gemini-Pro vision extraction pipeline to pull out 539 rows of real Bagrut (matriculation exam) questions and answers. That was a grind, but absolutely essential for robust evaluation.
+
+Speaking of evaluation, I built out a comprehensive framework: L2 Sefaria benchmarks, corpus ablation tests, L3 retrieval metrics, and L4 end-to-end evaluations. I even started experimenting with L5 LLM-as-judge evaluations, which is pretty meta. I also set up a versioned experimentation framework, locking in baselines and trying out advanced retrieval techniques like HyDE, RAPTOR, and a hybrid dense+BM25 RRF approach.
+
+The struggles were real. Parsing Gemara references, especially those spanning multiple pages or having complex multi-cite prefixes, was a headache. I had to fix several "drift cases" in my gold data against live Sefaria to ensure accuracy. The dashboards, while super useful for visualizing results, needed constant tweaking to prevent text overlap and fit all the experiment variants. And there were definitely some dead ends, like the `v2_top_k_20 (LOST)` experiment – sometimes you just gotta cut your losses and move on.
+
+But then came the breakthrough! After all that setup and iteration, implementing the v3 Voyage reranker was the first lever that *really* moved the needle, lifting L5 quality by almost 10 percentage points. That felt amazing, like finally seeing the light after slogging through dense text and data pipelines. It's a reminder that sometimes you just have to keep chipping away, building the infrastructure, and the big wins will eventually come. It felt like a real validation of all the meticulous work on data and evaluation.
+
+Next up: Integrating the Schottenstein edition and refining the LLM audit process.

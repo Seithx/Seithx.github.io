@@ -1,0 +1,26 @@
+Raw dev notes -- Dashboarding the Chaos: Pricing, Parsing, and Project Plans
+
+**Project Background:**
+Okay, so this project is a shipping tracking dashboard. The core idea is to give us a clear, consolidated view of all our shipments, where they are, and critically, what they're costing us. It's about bringing some order to what can often feel like a chaotic mess of logistics data, making it easier to spot trends, optimize routes, and understand our spend.
+
+**What was done:**
+This past week or so has been a whirlwind. On the UI front, I squashed a couple of annoying bugs – a `tooltip fix` that was driving me nuts and a `bg-attachment fix` that made the background behave properly. Also added a `shipper column` to the main view, which was a pretty obvious missing piece for quick identification.
+
+A big chunk of work went into data ingestion. I finally got the `ship_history XLSX` parsing working with a `glob` pattern, which means we can easily pull in multiple history files. That was a relief. I also started building out some `reusable demo tools` – basically, little scripts or components that make it easier to generate test data or showcase specific features without having to manually set everything up.
+
+A lot of the focus shifted to planning and documentation. I did a pretty significant `README rewrite`, trying to capture the project's purpose and current state better. Part of that was adding a `hurdles narrative`, which is basically a section outlining the big technical and business challenges we've faced or anticipate. We also did a `multi-tenant audit` to ensure the architecture could scale and handle different user groups securely.
+
+The biggest brain-bender was around pricing. I drafted a `pricing generalization plan`, aiming to move away from hardcoded rates to a flexible, configurable system. I even used a real-world contract as a `worked example` to make sure the plan was robust. This involved a deep dive into how we calculate costs, including the decision to `fold YoY rolling-12-month` calculations into the pricing logic – that's a whole beast of its own.
+
+Finally, I created a `PROJECT_OVERVIEW.md` as a single-page brief for anyone wanting to get up to speed quickly. It went through a couple of `fixes from audit` and I made sure to `declare missing deps` that came up during that review.
+
+**What was hard or surprising:**
+The UI fixes, while small, always seem to take longer than they should. CSS, man. Always something. But the real challenge was definitely the `pricing generalization plan`. Trying to abstract complex business rules into a flexible, maintainable system is incredibly difficult. You think you've covered all the edge cases, then you run a real-world example and realize you missed three more. The `rolling-12-month` calculation added another layer of complexity, requiring careful thought about data windows and aggregation.
+
+The `multi-tenant audit` was also eye-opening. It forced me to think about security and data isolation in ways I hadn't fully considered at the outset. It's easy to build for one user; building for many, with different permissions and data access, is a whole different ballgame. Parsing the `XLSX` files also had its moments – character encodings, inconsistent formatting, you name it. It's never as straightforward as you hope.
+
+**Personal reflection:**
+Honestly, this period felt like a mix of small wins and big mental stretches. Getting those UI bugs squashed felt good, like clearing cobwebs. But diving into the pricing logic was a real test of my ability to think systematically and abstractly. There were moments of frustration, staring at a blank screen trying to figure out how to model something so complex. But then, when a piece of the plan clicked, or I saw how a generalized approach could work, it was incredibly satisfying. It's a reminder that sometimes the most impactful work isn't about writing a ton of code, but about careful planning and understanding the domain deeply. I'm definitely growing in my ability to tackle these larger, more ambiguous problems.
+
+**What's next:**
+Time to start implementing that generalized pricing plan.

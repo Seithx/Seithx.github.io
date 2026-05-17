@@ -1,0 +1,24 @@
+Raw dev notes -- Handoffs, AI Archives, and Offline Brains
+
+**Project Background:**
+VisionMaker is my personal quest to build an AI assistant specifically tailored for computer vision tasks. Think of it as a smart co-pilot for when I'm wrestling with object detection models like YOLO. The whole idea is to streamline my workflow, get quick answers, and automate some of the more tedious parts of CV development.
+
+**What was done:**
+This past week felt like a mix of wrapping things up and kicking off new capabilities. First, I spent a chunk of time preparing for a potential handoff. This involved creating a `HANDOFF.md` document, which is always a fun exercise in trying to remember everything I've done. Crucially, I also decided to archive all my conversations with Claude Code, the AI assistant I've been using heavily for this project. My initial thought was "archive everything, just in case!" which led to a pretty hefty folder of chat logs.
+
+Then, I had a moment of clarity (or maybe just exhaustion) and realized that most of those conversations were just me fumbling around or asking basic syntax questions. So, I went back and slimmed down the archive to just the single most substantive session – the one where Claude really helped me architect a core part of the system. Much cleaner.
+
+On the development front, I added a new "skill" to VisionMaker: the `ultralytics-docs-navigator`. This is a big one for me. It's essentially a way for VisionMaker to access and navigate the Ultralytics (YOLO) documentation *offline*. No more jumping to a browser, no more relying on internet connectivity. It's like giving VisionMaker its own internal brain for YOLO knowledge.
+
+**What was hard or surprising:**
+The handoff prep was surprisingly draining. It forces you to look at your own work with a critical eye, trying to anticipate what someone else would need to know. My initial impulse to archive *every single chat* with Claude Code was a classic example of over-engineering documentation. It took a step back to realize that quality over quantity is key, even for internal notes. It was a good reminder that just because you *can* save everything, doesn't mean you *should*.
+
+Building the offline docs navigator also had its quirks. Getting the parsing and indexing right so VisionMaker can actually *understand* and retrieve relevant information from the local docs wasn't trivial. It's not just about having the files; it's about making them searchable and digestible for an AI agent. I definitely hit a few snags trying to figure out the best way to structure that local knowledge base.
+
+**Personal reflection:**
+This period felt like a mini-cycle of creation, reflection, and refinement. The handoff process, even for a personal project, was a good exercise in articulating my thought process and the project's evolution. It made me realize how much I rely on AI tools like Claude Code, and it sparked a thought: am I just getting faster, or am I truly learning more deeply when I use them? The "slimming down" of the archive felt like a small victory in self-editing and understanding what truly matters.
+
+Adding the offline docs skill felt like a significant step towards making VisionMaker truly self-sufficient and powerful. It's about building my own tools to augment my own learning and productivity, which is a core reason I started this project. It feels good to build something that directly addresses a pain point I've experienced (constantly context-switching to look up docs).
+
+**What's next:**
+Integrate the new offline docs navigator skill more deeply into VisionMaker's core reasoning loop.
