@@ -1,0 +1,30 @@
+Raw dev notes -- Gemara RAG: Dialectical Tagging Sprint & v8 Win!
+
+**Project Background:**
+This project, `gemara-page-rag-experiment`, is all about making the Gemara – a super complex, ancient Jewish text – more accessible using AI. Specifically, it's a Retrieval Augmented Generation (RAG) experiment focused on identifying and tagging the "dialectical markers." These are the intricate back-and-forth arguments, questions, and answers that make the Gemara so challenging to navigate, and the goal is to help users understand its unique logical flow.
+
+**What was done this period:**
+This past week felt like a whirlwind sprint! We really kicked off "Stage 1" of the dialectical tagging process. A huge chunk of time went into planning and documentation, which honestly, is always more than I expect. I laid out the detailed dialectical tagging plan, pulled together some resources on MoE (Mixture of Experts) pedagogy – basically, how to teach or explain these complex structures – and even sketched out a "page anatomy" image to visualize exactly what we're trying to tag within the Gemara text.
+
+The big technical milestone for Stage 1 was generating the initial JSON markers from our "MoE 8A" model. That felt like a real step forward. We locked down the plan decisions for Stage 1, which was satisfying, but then immediately had to do some "audit fixes" – classic, right? Always something you miss on the first pass.
+
+I also got an `EXPERIMENT_ROADMAP.md` in place to keep everything organized, and got `eval_l4` running again after some kind of hiccup. We wired up the "Batch API L5" and did some "MoE corpus triage" using "Sonnet" (a tool/model we're using for processing).
+
+The absolute highlight was getting `v8 eval complete`! That was a major, major milestone and felt like a huge win. Of course, it wasn't without its bumps – I had to fix a tricky `Batch API key-by-index` bug that was causing some headaches. Finally, I documented the `v8 PARETO WIN` (super satisfying to see those results!) and did some repo cleanup with `CREDITS.md` and a better `.gitignore`.
+
+**What was hard or surprising:**
+The sheer complexity of defining and extracting these "dialectical markers" programmatically is just a beast. Translating the nuanced human understanding of Gemara's argumentative flow into something a machine can consistently identify and tag in JSON format is incredibly difficult. The "page anatomy" doc was crucial, but it's still a constant challenge.
+
+The "Stage 1 audit fixes" right after locking the plan felt a bit like two steps forward, one step back. It's a good reminder that even with meticulous planning, there are always edge cases or details you overlook until you start implementing.
+
+That `Batch API key-by-index fix` was a classic off-by-one or indexing error. Those always feel like such dumb mistakes, but they're insidious and can take surprisingly long to track down. It's humbling.
+
+What surprised me, in a good way, was how much the upfront documentation and planning (even for an "experiment") paid off. It felt like a lot of overhead at times, but it definitely streamlined the execution once we got going.
+
+**Personal reflection:**
+This week felt like a real sprint, a rollercoaster of frustration and triumph. There were definitely moments where I felt stuck, especially with that indexing bug, but the feeling of getting `v8 eval complete` and seeing the `PARETO WIN` was incredibly validating. It's a powerful reminder that even small, incremental progress on a really hard, meaningful problem is significant.
+
+I'm learning so much about structuring complex, domain-specific information for AI, and the absolute importance of meticulous planning, clear definitions, and robust evaluation. It's not just about writing code; it's about deeply understanding the subject matter to guide the AI effectively. It feels good to be making tangible progress on something that could genuinely help people engage with a challenging, important text. It connects to my broader goal of using tech for meaningful impact.
+
+**What's next:**
+Time to dive into Stage 2 and refine the tagging process even further.

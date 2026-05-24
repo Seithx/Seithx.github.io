@@ -1,0 +1,15 @@
+Raw dev notes -- Taming the WSL Beast (and other config adventures)
+
+Okay, so this `claude-config` repo is basically my digital brain dump for all things dev environment. The idea is to have one place where I can stash all my dotfiles, system settings, and little tweaks that make my dev life bearable. It's my personal "infrastructure as code" for my own machines, aiming to make setting up a new laptop or recovering from a fresh OS install less of a nightmare.
+
+This past week was mostly a lot of `auto-sync` commits, which honestly, is a good thing. It means the automation I set up to keep this repo updated with my live configs is actually working. It's a nice background hum of "things are backed up." But the real meat of the work, the actual *change* I made, was adding that `wslconfig` reference.
+
+Man, WSL. It's a love-hate relationship, right? It's incredible for having a proper Linux dev environment on Windows, but it can be a real memory hog. I've been battling with it for a while – either it's eating up so much RAM that my Windows host starts to chug, or it's being too aggressive with memory reclamation, causing my dev tools inside WSL to stutter and freeze at the worst possible moments. It's like a constant tug-of-war for resources.
+
+The specific settings I added to the config were `8GB cap` and `autoMemoryReclaim=gradual`. That 8GB cap is a sweet spot for my machine, giving WSL enough room to breathe for most tasks without starving Windows. But the `gradual` reclaim? That's the real game-changer. Before, when WSL decided to free up memory, it felt like a sudden, jarring pause in whatever I was doing. With `gradual`, it's much smoother, less noticeable. It stops those frustrating micro-freezes that break my flow.
+
+It was surprising how much impact these two little lines in a config file could have. I'd tried just capping the memory before, but the sudden drops were still a pain. Finding the `gradual` option felt like uncovering a hidden gem. It's a good reminder that sometimes the biggest productivity boosts aren't about writing more code, but about optimizing the environment you write it in. It felt like a small victory, but a significant one for my daily sanity.
+
+Honestly, getting this WSL memory situation sorted out felt like a huge relief. A slow or unpredictable dev environment is a constant, low-level stressor that just drains your energy. It's like having a pebble in your shoe all day – not a huge problem, but constantly irritating. Getting this fixed feels like I've removed that pebble. It reinforces the lesson that investing time in your tools and environment isn't a distraction; it's essential for long-term productivity and mental well-being.
+
+Next up: Keep an eye out for other system configs that could use some love and optimization.
