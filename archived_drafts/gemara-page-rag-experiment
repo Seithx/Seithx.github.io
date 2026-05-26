@@ -1,17 +1,30 @@
-Raw dev notes -- "Taming the Talmud with RAG: A Week of Data, Docs, and Dopamine"
+Raw dev notes -- Gemara RAG: Dialectical Tagging Sprint & v8 Win!
 
-Okay, this past week has been a whirlwind. The project, `gemara-page-rag-experiment`, is all about building a Retrieval Augmented Generation (RAG) system to make the Gemara (Talmud) more accessible. Imagine being able to ask complex questions about these ancient texts and get coherent, referenced answers. It's a huge challenge because the text is dense, multi-layered, and full of intricate discussions. My goal is to build a system that can understand and navigate this complexity.
+**Project Background:**
+This project, `gemara-page-rag-experiment`, is all about making the Gemara – a super complex, ancient Jewish text – more accessible using AI. Specifically, it's a Retrieval Augmented Generation (RAG) experiment focused on identifying and tagging the "dialectical markers." These are the intricate back-and-forth arguments, questions, and answers that make the Gemara so challenging to navigate, and the goal is to help users understand its unique logical flow.
 
-This period was intense, packed into just a few days. I kicked things off by diving deep into the structure of a "sugya" – a thematic unit in the Gemara. This involved a lot of research into how these discussions are bounded, how they nest, and how they parallel each other. This understanding is crucial for effective retrieval.
+**What was done this period:**
+This past week felt like a whirlwind sprint! We really kicked off "Stage 1" of the dialectical tagging process. A huge chunk of time went into planning and documentation, which honestly, is always more than I expect. I laid out the detailed dialectical tagging plan, pulled together some resources on MoE (Mixture of Experts) pedagogy – basically, how to teach or explain these complex structures – and even sketched out a "page anatomy" image to visualize exactly what we're trying to tag within the Gemara text.
 
-Then came the core RAG work. I set up an initial proof-of-concept (v0) using a specific RAG approach, applying lessons learned from previous experiments, like using per-line tags and Sefaria topics. I expanded the content to include commentaries like Rashi and Tosafot, and made sure the text structure (like reference headings) was preserved. A big part of this was also handling both English and Hebrew texts, which meant splitting evaluations by language and ensuring parallel file structures.
+The big technical milestone for Stage 1 was generating the initial JSON markers from our "MoE 8A" model. That felt like a real step forward. We locked down the plan decisions for Stage 1, which was satisfying, but then immediately had to do some "audit fixes" – classic, right? Always something you miss on the first pass.
 
-A massive chunk of time went into data. I collected hundreds of real Gemara questions from various sources, including Hebrew questions from otzar.org. The biggest win here was building out a substantial corpus for Bava Batra (2a-25b) and, crucially, creating a gold standard dataset. This involved downloading 87 Toshba questionnaire PDFs and then building a Gemini-Pro vision extraction pipeline to pull out 539 rows of real Bagrut (matriculation exam) questions and answers. That was a grind, but absolutely essential for robust evaluation.
+I also got an `EXPERIMENT_ROADMAP.md` in place to keep everything organized, and got `eval_l4` running again after some kind of hiccup. We wired up the "Batch API L5" and did some "MoE corpus triage" using "Sonnet" (a tool/model we're using for processing).
 
-Speaking of evaluation, I built out a comprehensive framework: L2 Sefaria benchmarks, corpus ablation tests, L3 retrieval metrics, and L4 end-to-end evaluations. I even started experimenting with L5 LLM-as-judge evaluations, which is pretty meta. I also set up a versioned experimentation framework, locking in baselines and trying out advanced retrieval techniques like HyDE, RAPTOR, and a hybrid dense+BM25 RRF approach.
+The absolute highlight was getting `v8 eval complete`! That was a major, major milestone and felt like a huge win. Of course, it wasn't without its bumps – I had to fix a tricky `Batch API key-by-index` bug that was causing some headaches. Finally, I documented the `v8 PARETO WIN` (super satisfying to see those results!) and did some repo cleanup with `CREDITS.md` and a better `.gitignore`.
 
-The struggles were real. Parsing Gemara references, especially those spanning multiple pages or having complex multi-cite prefixes, was a headache. I had to fix several "drift cases" in my gold data against live Sefaria to ensure accuracy. The dashboards, while super useful for visualizing results, needed constant tweaking to prevent text overlap and fit all the experiment variants. And there were definitely some dead ends, like the `v2_top_k_20 (LOST)` experiment – sometimes you just gotta cut your losses and move on.
+**What was hard or surprising:**
+The sheer complexity of defining and extracting these "dialectical markers" programmatically is just a beast. Translating the nuanced human understanding of Gemara's argumentative flow into something a machine can consistently identify and tag in JSON format is incredibly difficult. The "page anatomy" doc was crucial, but it's still a constant challenge.
 
-But then came the breakthrough! After all that setup and iteration, implementing the v3 Voyage reranker was the first lever that *really* moved the needle, lifting L5 quality by almost 10 percentage points. That felt amazing, like finally seeing the light after slogging through dense text and data pipelines. It's a reminder that sometimes you just have to keep chipping away, building the infrastructure, and the big wins will eventually come. It felt like a real validation of all the meticulous work on data and evaluation.
+The "Stage 1 audit fixes" right after locking the plan felt a bit like two steps forward, one step back. It's a good reminder that even with meticulous planning, there are always edge cases or details you overlook until you start implementing.
 
-Next up: Integrating the Schottenstein edition and refining the LLM audit process.
+That `Batch API key-by-index fix` was a classic off-by-one or indexing error. Those always feel like such dumb mistakes, but they're insidious and can take surprisingly long to track down. It's humbling.
+
+What surprised me, in a good way, was how much the upfront documentation and planning (even for an "experiment") paid off. It felt like a lot of overhead at times, but it definitely streamlined the execution once we got going.
+
+**Personal reflection:**
+This week felt like a real sprint, a rollercoaster of frustration and triumph. There were definitely moments where I felt stuck, especially with that indexing bug, but the feeling of getting `v8 eval complete` and seeing the `PARETO WIN` was incredibly validating. It's a powerful reminder that even small, incremental progress on a really hard, meaningful problem is significant.
+
+I'm learning so much about structuring complex, domain-specific information for AI, and the absolute importance of meticulous planning, clear definitions, and robust evaluation. It's not just about writing code; it's about deeply understanding the subject matter to guide the AI effectively. It feels good to be making tangible progress on something that could genuinely help people engage with a challenging, important text. It connects to my broader goal of using tech for meaningful impact.
+
+**What's next:**
+Time to dive into Stage 2 and refine the tagging process even further.

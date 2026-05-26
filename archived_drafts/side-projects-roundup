@@ -1,30 +1,45 @@
-Raw dev notes -- A Week of Tinkering: AI, Alerts, and Code Cleanup
+Raw dev notes -- Juggling the AI & Infra Side Projects
 
-**1. Project Background:**
-This past week was a whirlwind of jumping between a few personal projects. They're all about making my digital life a bit smoother, whether it's understanding how AI tools work under the hood, keeping tabs on my personal finances, or just making sure my home server doesn't silently die on me. It's my personal sandbox for learning new tech and solving my own little annoyances.
+Alright, another week, another whirlwind of side project hopping. It feels like I'm constantly spinning plates, but in a good way – each one teaches me something new. These projects are basically my personal sandbox for diving deeper into AI/ML, especially RAG and LLM stuff, and also just keeping my dev ops muscles limber. It's where I get to experiment without the pressure of a client deadline, just pure learning.
 
-**2. What was done:**
-Kicked off a couple of new AI-related explorations. I started digging into a popular AI Chrome extension, essentially importing its reference code to see how it ticks. This is tied into a broader "Claude config" project where I'm building out a baseline for managing settings, hooks, agents, and a plugin registry for interacting with various AI models. It's all about having a centralized way to control my AI interactions. I also tightened up the gitignore on that project to a strict whitelist, which felt like a good security move, even if it's a bit more work initially.
+**What I actually did this past week:**
 
-On the more practical side, I spent some time polishing up the "MyBill Dashboard." This involved implementing multi-tenant configuration (which was a bit of a beast to get right), fixing some UX quirks, and adding a "capture tool" – mostly for quick data snapshots.
+*   **claude-token-audit:** This one's about getting a handle on API token usage, specifically for Claude. I pushed a bunch of stuff:
+    *   Got a basic "recommender" system in place, along with some helper functions. The idea is to flag potential inefficiencies or weird usage patterns.
+    *   Implemented an "in-process scan" – trying to catch token usage as it happens, rather than just post-facto. This is tricky.
+    *   Added "per-Read tracking," which is a granular way to see how many tokens each read operation consumes. Super important for cost optimization.
+    *   Did some "bash key cleanup" – always a fun dance with sensitive data in scripts.
+    *   Renamed the project to `claude-token-audit` to make its purpose clearer and linked it to some related hook repos.
 
-Then there was the QMS_RH_RAG project, which got a much-needed codebase reorganization. I did a "5S audit" on it, which basically means I tidied everything up, added a proper README (finally!), and started looking into on-premise translation capabilities for it. This project is all about leveraging RAG for better, more localized AI responses.
+*   **DHL_MyBill_Dashboard:** This is my attempt to build a personal dashboard for tracking various bills and expenses.
+    *   Mostly planning this week. I wrote up a "project overview doc for LLM briefing" and updated the TODO list. Trying to leverage an LLM to help me scaffold some of the initial code or even just brainstorm architecture.
 
-Finally, my "Personal Information Hub" got some critical love. I fixed the watchdog to re-alert every two hours if an issue persists and added verification for Pushover notifications – gotta make sure those alerts actually reach me! Crucially, I also suppressed alerts on Fridays and Saturdays because, honestly, some things can wait until Monday. The session monitor also got an upgrade, now escalating to a Docker restart if things go really sideways, and it'll dedup alerts so I don't get spammed.
+*   **QMS_RH_RAG_PROJECT:** This is a big one, my deep dive into Retrieval Augmented Generation for a knowledge management system.
+    *   Implemented "dual-index embed" – trying to improve retrieval accuracy by using two different embedding strategies. It's a bit experimental.
+    *   Made some "LLM translation fixes" – dealing with the quirks of getting the LLM to output exactly what I want, especially when it comes to semantic understanding.
+    *   Refreshed the TODO list, as always.
 
-**3. What was hard or surprising:**
-The multi-tenant config on the MyBill Dashboard was a real head-scratcher. It's one thing to build something for yourself, but making it flexible enough for multiple "tenants" (even if they're just different contexts for *me*) adds a whole layer of complexity I hadn't fully appreciated. Getting the UX just right after that was also a challenge – it's easy to get lost in the backend logic and forget the user experience.
+*   **RAG Knowledge Base Pipeline:** This is the backend pipeline that feeds the RAG project.
+    *   It's been chugging along, mostly syncing. Saw a couple of "comment updates" come through, which means it's actively processing changes in the source data. Good to see it's stable.
 
-The strict gitignore whitelist was also a bit of a pain. It's good practice, but man, you forget how many little config files or temporary build artifacts you generate until you have to explicitly allow them. It felt like fighting my own tools for a bit.
+*   **VisionMaker:** My computer vision annotation project.
+    *   Fixed a super annoying bug where my `cvat.ps1` script would bail out because `docker compose` was spitting out benign stderr messages. It wasn't actually failing, just being noisy, but the script interpreted it as an error. Classic infra headache.
 
-And the Personal Information Hub fixes, while seemingly small, highlighted how much I rely on these background systems. Debugging why a Pushover alert *didn't* fire, or why a Docker container *didn't* restart, can be surprisingly frustrating. It's like trying to fix a ghost in the machine. The "suppress Fri/Sat" feature was a small win, but it took a bit of thought to implement robustly without missing critical alerts.
+**What was hard or surprising:**
 
-**4. Personal reflection:**
-This week felt like a good mix of deep dives and broad strokes. I really enjoyed the initial exploration into the Claude extension – it's like being a digital detective, trying to piece together how something works from the outside in. It reminds me that even complex tools are just code, and you can always learn from them. The config project feels like a foundational step towards a more integrated AI workflow for myself, which is exciting.
+The `claude-token-audit` project is proving to be a real beast. Tracking token usage accurately, especially "per-Read," is way more complex than I anticipated. You think it's just counting, but then you hit edge cases and different API call patterns. The "recommender" part is also a challenge – how do you define "good" usage programmatically?
 
-On the other hand, wrestling with the dashboard's multi-tenancy and the monitoring fixes for the Information Hub felt more like maintenance, but crucial maintenance. It's a reminder that building is only half the battle; keeping things running smoothly and reliably is just as important, if not more so, for long-term sanity. It felt good to finally get those monitoring fixes in place, knowing I won't be woken up by a non-critical alert on a Saturday morning. It's about setting boundaries, even with my own code.
+On the RAG side, the "LLM translation fixes" were a reminder that LLMs are powerful but still require a lot of careful prompt engineering and post-processing to get reliable, consistent output. It's not just "ask and receive perfect answer." The dual-index embedding is also a rabbit hole – so many options, so little time to benchmark them all properly.
 
-I'm learning to appreciate the "chore" commits more – the gitignores, the READMEs, the 5S audits. They're not glamorous, but they make future me's life so much easier. It's a sign of growth, I think, moving beyond just "making it work" to "making it maintainable."
+And that `VisionMaker` bug... ugh. Debugging scripts that fail on "benign" output is always a time sink. It's like the computer is yelling at you for no reason. It's a good reminder that robust scripting needs to account for the unexpected, even if it's just noise.
 
-**5. What's next:**
-Continue building out the AI config system and integrate it with more tools.
+**Personal Reflection:**
+
+This past week felt like a microcosm of my dev journey: a mix of exciting new feature development, frustrating bug hunts, and the constant learning curve of new tech (LLMs!). I felt a real sense of accomplishment getting the `claude-token-audit` recommender off the ground, even if it's basic. It's satisfying to build tools that help me understand and optimize other tools.
+
+The `DHL_MyBill_Dashboard` planning phase felt a bit slow, but taking the time to document and think about how an LLM could assist is a new approach for me, and I'm curious to see if it pays off. It's pushing me to think about project planning differently.
+
+Overall, I'm feeling pretty good about the progress across these diverse projects. It reinforces that I love the variety and the challenge of constantly learning. It's a testament to how much I've grown in tackling different domains, from infra to AI.
+
+**What's next:**
+Dive deeper into the LLM-assisted dashboard development and refine the RAG embeddings.
