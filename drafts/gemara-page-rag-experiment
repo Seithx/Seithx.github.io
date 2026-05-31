@@ -1,0 +1,34 @@
+Raw dev notes -- Deep Dive into RAG Evaluation: Faithfulness, Metrics, and the Gemara
+
+**Project Background:**
+This project, `gemara-page-rag-experiment`, is all about trying to build a really good Retrieval Augmented Generation (RAG) system for Gemara texts. The goal is to make an AI that can answer questions about these complex religious texts accurately and, crucially, *faithfully* to the source material. It's a deep dive into how to make LLMs reliable for highly specific, nuanced domains.
+
+**What was done in this period:**
+Man, this past couple of weeks has been a whirlwind of metrics, docs, and trying to get a handle on what "good" even means in RAG.
+
+We kicked off with some solid wins, like the `v10_kg2rag` update. Integrating Sefaria links into our knowledge graph was a huge step, giving us an `L5` quality bump of over 18 percentage points. That felt good, like we were really making progress on the core RAG retrieval.
+
+Then it was all about refining the text processing. We got `marker tagging` to 100% using a hybrid regex+LLM approach, which was pretty neat. This helps us chunk the text more intelligently. We ran a `v10 full-539 sweep` and hit an `L5` of 0.802, which was a new high. We even tried adding a `halakhic_methodology layer`, but `v13_marker_aware` turned out to be a `NEGATIVE` experiment – sometimes you just gotta try things to know they don't work.
+
+A big breakthrough came with `v15 prompt` engineering, pushing `L5` up to 0.860. But honestly, the real work wasn't just chasing that number. It was building out the `eval-infra hardening`. I spent a ton of time on documentation: `eval-system explainer`, `Ragas comparison`, `Ragas internals + honest blind-spot analysis`. I even built a `dashboard` with an `L5 headline chart` and `auto-refresh` so I could actually *see* what was happening.
+
+The biggest shift was moving beyond just `L5` and really digging into `faithfulness` and `groundedness`. We implemented `R1 groundedness/faithfulness eval (L6)` and a `batch pipeline` for it. This was huge. We also added `R5 context-precision metric`. To make sure our evaluations were solid, I set up `R4 part A — judge calibration` with `blind human-review CSVs` and confirmed our human judges were reliable.
+
+The results from `R1 faithfulness` were a bit of a gut punch – `concern confirmed`. Our initial `faith` score was around 0.49, and after a full `E1` run over 503 questions, it was 0.46. That's... not great. It really highlighted that high `L5` doesn't automatically mean the answers are *true* to the source.
+
+We also did some `KG2RAG context-organization` and started experimenting with `R10 self-labeling prompt (v17)` to tag claims as source-based or general knowledge. And a crucial `fix` for `deterministic metadata-key batch correlation` across scripts – gotta keep that eval consistent!
+
+**What was hard or surprising:**
+The most surprising thing was how much effort went into *evaluating* the RAG system, rather than just building it. I thought I had a good handle on things with `L5` looking strong, but then `R1 faithfulness` came along and slapped me with reality. It was a stark reminder that a high-quality *answer* doesn't mean a high-quality *process* if the answer isn't grounded.
+
+The `v13_marker_aware (NEGATIVE)` result was a minor bummer, but it's part of the process. More challenging was wrestling with the `eval-infra hardening` and making sure all the metrics were robust and reproducible. Comparing our custom eval system to Ragas was also a journey – understanding its strengths and weaknesses, and where our blind spots might be.
+
+There was also a specific `B1` issue related to Mishnah text that we initially thought might be a problem, but after empirical testing, it turned out to be `low-harm` and a `won't-fix`. It's always tricky deciding when to chase down a rabbit hole and when to accept a minor imperfection.
+
+**Personal Reflection:**
+This period felt like a real growth spurt in my understanding of RAG. I started out focused on getting good answers (high `L5`), but I've pivoted hard into understanding *why* those answers are good, and more importantly, *if they're true*. The "concern confirmed" moment with faithfulness was a wake-up call. It's easy to get caught up in the numbers, but if the system isn't faithful, it's fundamentally broken for this kind of domain.
+
+It's been a humbling experience, realizing how much more there is to learn about robust evaluation. I feel like I've leveled up my critical thinking about LLM outputs. It's not just about making it *sound* right, but making sure it *is* right, and that it can *prove* it's right. The extensive documentation work, especially the `SYSTEM_DIGEST` and `RESEARCH_DIGEST`, has been my way of solidifying this understanding, not just for others, but for myself. It's like I'm building a mental model of the entire RAG landscape, piece by piece.
+
+**What's next:**
+Time to tackle that faithfulness score head-on with the `master action plan`.

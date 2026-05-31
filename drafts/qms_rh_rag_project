@@ -1,0 +1,24 @@
+Raw dev notes -- Untangling RAG Serving and Getting That Green Bar
+
+**Project Background:**
+Okay, so this project, let's call it the "QMS RAG Service," is all about making our internal Quality Management System (QMS) data accessible through a Retrieval Augmented Generation (RAG) system. Basically, it lets people ask questions about QMS documents and get intelligent, context-aware answers. The goal here was to pull out the core serving logic for this RAG system from a much larger, somewhat monolithic "AI agent platform" project and give it its own dedicated, robust home.
+
+**What Was Done:**
+Man, oh man, this past week was a big one for getting the QMS RAG service properly stood up. The main thrust was definitely the `feat(serving): consolidate QMS RAG serving tier`. This was the big architectural move – taking the RAG serving components that were previously embedded within a broader, more general-purpose AI agent system and giving them their own dedicated service. It's all about better separation of concerns, clearer ownership, and easier scaling for this specific use case.
+
+Once that core consolidation was done, the next major milestone was getting it deployed and verified. That `docs: mark QMS serving verify bar green (deploy + /search confirmed)` commit felt *so* good to push. It means we successfully deployed the new standalone service, and critically, confirmed that the `/search` endpoint was working as expected. That's the heart of the RAG system, so seeing that green bar was a huge relief and a major step forward.
+
+Alongside the core serving work, there was a fair bit of documentation. I added `CLAUDE.md` to detail the serving tier and how it integrates with our platform, specifically for the Claude model. Later, I did a quick cleanup with `docs: consolidate CLAUDE.md`, making sure the root `CLAUDE.md` was the canonical source and any other references were just pointers. And, of course, a little `chore: update local Claude Code permission allowlist` to keep things humming along on the permissions front.
+
+**What Was Hard or Surprising:**
+Honestly, the "consolidation" part was trickier than I initially anticipated. Untangling dependencies from the larger agent system was like playing Jenga – pull out one piece, and you're worried the whole tower will fall. There were a few moments where I thought I'd broken something fundamental, but thankfully, it was mostly just careful refactoring and dependency management.
+
+Getting the deployment to "green" wasn't entirely smooth sailing either. There were a couple of hiccups with environment variables and network configurations that took a bit of debugging to sort out before `/search` finally responded correctly. It's always those little things that eat up time.
+
+The Claude integration, while not new, always requires careful attention to permissions and how it interacts with our internal platform. It's not just about making the code work, but making sure it's secure and compliant.
+
+**Personal Reflection:**
+This week felt like a real win. Taking a critical piece of functionality, extracting it, and making it a standalone, deployable service is incredibly satisfying. It's a big step towards a more modular and resilient architecture. Seeing that "green bar" for deployment and `/search` working was a genuine moment of accomplishment. It reinforces the idea that breaking down complex systems into smaller, manageable services is the way to go, even if the initial untangling is a bit painful. It also pushed me to think more deeply about service boundaries and API contracts. It felt good to deliver something so tangible and foundational.
+
+**What's Next:**
+Now that the core serving is solid, it's time to focus on expanding its capabilities and integrating it more deeply with user-facing applications.

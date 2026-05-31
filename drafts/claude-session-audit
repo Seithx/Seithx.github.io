@@ -1,0 +1,24 @@
+Raw dev notes -- The Evolving Audit: From Tokens to Sessions
+
+**Project Background:**
+This project, now called `claude-session-audit`, started life as something more focused on just "tokens" – I think it was `claude-code-token-toolkit` at one point, then `claude-token-audit`. The core idea has always been to build a tool to help understand and audit how permissions and access work within a specific system (let's call it the "Claude" system for simplicity). It's about making sure people can do what they need to do, but also that things are secure and well-defined. Basically, trying to shine a light on the often-murky world of permissions.
+
+**What was done in this period:**
+This past week or so has been pretty busy. The biggest thing was probably the project rename itself, from `claude-token-audit` to `claude-session-audit`. That wasn't just a cosmetic change; it really reflects a shift in focus. I realized that just looking at tokens wasn't enough; I needed to understand the broader context of *sessions* and how permissions play out within them.
+
+Feature-wise, I landed two big ones. First, `permission_audit.mjs` which is designed to detect "coverage gaps" in our `permissions.allow` definitions. This is crucial for making sure we haven't accidentally left out permissions that *should* be there, or conversely, that we're not over-permitting. Then, `permission_friction.mjs` came in, which is a really interesting one. It's about trying to identify where users might be experiencing "friction" due to permissions – maybe things are technically allowed but hard to do, or frequently denied in practice.
+
+On the usability front, I spent some time smoothing out the first-time install experience. Nothing worse than a great tool that's a pain to get running. I also added per-file progress indicators, which makes the scan feel a lot more responsive, and improved the "sub-agent walk" logic, which helps the tool navigate the different components of the system it's auditing.
+
+**What was hard or surprising:**
+The project rename, while necessary, was a bit of a mental hurdle. It felt like admitting the initial scope was off, which is always a little humbling. But it's also a sign of growth, I guess.
+
+The `permission_audit` part was tricky because defining what a "coverage gap" *is* can be surprisingly subjective. It's not just about what's explicitly allowed or denied, but what *should* be allowed based on expected behavior. That required a lot of thought about the underlying logic and how to represent that programmatically.
+
+`permission_friction` was even harder. How do you quantify "friction"? It's not a simple boolean. I'm still iterating on the heuristics there, trying to find a good balance between false positives and actually catching real pain points. The "sub-agent walk" also threw up some unexpected complexities when dealing with different states and potential recursion issues. It's like trying to map a constantly shifting maze.
+
+**Personal reflection:**
+This period felt like a real turning point for the project. The rename felt like a big step, solidifying the direction and making the scope clearer. It's a good reminder that it's okay to pivot and refine your understanding of a problem as you dig deeper. I felt a mix of frustration when hitting those tricky logic problems, but also a real sense of accomplishment when the progress bars started working and the audit results began to make sense. It's satisfying to build something that can actually help untangle complex system behaviors. It reinforces the idea that sometimes you have to build the tools to understand the problem itself.
+
+**What's next:**
+Refine friction detection and start visualizing the audit results.

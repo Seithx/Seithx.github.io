@@ -1,0 +1,26 @@
+Raw dev notes -- The Great Untangling & GPU Gauntlet
+
+**1. Project & Why:**
+This project, let's call it the "AI Agent Platform," is essentially the brain and nervous system for our internal AI agents. It's designed to help business users with complex tasks like financial planning, data analysis, and process automation, making our operations smarter and more efficient. It's all about empowering our teams with AI tools.
+
+**2. What was done in this period:**
+Man, what a sprint! This past week felt like a massive architectural overhaul. The biggest thing was the **untangling of core services**. We finally pulled the "Planner Agent" out into its own dedicated repo and service, which was a huge win for modularity. Same goes for the "QMS" (Quality Management System) component – now it's living in its own space.
+
+The "Transcribe" service also got a major refactor. It's now a standalone pod, completely separate from the old setup. This involved decommissioning the legacy `:7375` endpoint, which was a bit like pulling teeth, but it's finally at zero services there. As part of that, we introduced a brand new **GPU-accelerated diarization service** (for speaker separation in audio), running on Blackwell, which is super exciting. It supports m4a/AAC and is wired into the transcribe flow.
+
+On the **Planner side**, beyond the separation, we added some serious business logic: NDO enrichment (neutralizations, ABC intervals, value levers) and impact analysis. I also spent a ton of time on the user-facing side, creating a PII-safe column provenance generator and consolidating review workbooks. A huge chunk of work went into redesigning the **roadmap visuals** – making them swimlane timelines, translating them to Hebrew/RTL, stripping out jargon and emojis, and generally making them super clear and digestible for management.
+
+From an **infrastructure and ops perspective**, we did a lot of foundational work. Set up `aiportal` routing, implemented IT-ready firewall policies, and created a really visual "data strategy" overview with clickable ETL connection maps. We also got a container registry tag pruner going, and started building out **GPU preflight checks** (VRAM, PVCs) and a K8s services health board. A significant chunk of planning went into evaluating on-prem LLMs for coding and SQL tasks (the "Claude Code bake-off"), including defining a multi-model GPU strategy.
+
+**3. What was hard or surprising:**
+The sheer volume of architectural changes was intense. It felt like I was performing open-heart surgery on a running system. Every time we extracted a service, there were ripple effects. For example, the `transcribe` cutover broke the UI because the webhook response changed, so I had to quickly fix the `jobId` normalization. Similarly, the planner worklist filters kept breaking due to merged cells, which was a pain to debug and fix cleanly.
+
+Managing the GPU resources and dependencies for the new diarization service was also a challenge – dealing with specific `torch` blockers for Blackwell and ensuring the preflight checks were robust. It's a whole new world of deployment considerations.
+
+What surprised me was how much effort went into making the documentation and roadmaps truly accessible. Stripping out technical jargon, making things visual, and handling RTL languages like Hebrew for complex diagrams takes a lot more thought than just writing markdown. It really highlighted the gap between "what we built" and "how we explain it."
+
+**4. A personal reflection:**
+This period felt like a massive growth spurt. I was juggling deep technical refactoring with high-level strategic documentation and operational readiness. It was stressful at times, especially when things broke after a cutover, but incredibly satisfying to see these big, monolithic components finally get untangled and stand on their own. It reinforced the value of clear architecture and the pain points of not having it. I also felt a renewed appreciation for meticulous documentation, not just for developers, but for bridging the gap with stakeholders. The "declutter" commits throughout the week show my constant battle against technical debt and my desire for a clean, organized codebase, even amidst chaos. It's a testament to the idea that even when you're building fast, you need to be thinking about maintainability and communication.
+
+**5. What's next:**
+Dive deeper into the Claude Code bake-off and continue refining the new service architectures.

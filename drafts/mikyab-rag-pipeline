@@ -1,0 +1,21 @@
+Raw dev notes -- RAG Pipeline: Batching, Bundles, and Battling the Hang
+
+Okay, so this project is all about building out a robust RAG (Retrieval Augmented Generation) knowledge base. The core idea is to take existing Q&A content from a specific website, process it, and then make it available for an AI system to use. Think of it as creating a super-smart, always-updated FAQ bot, but with actual AI smarts behind it. It's crucial for providing accurate, up-to-date answers based on a trusted source.
+
+This past week or so has been a pretty solid sprint on the RAG pipeline. The most visible thing is the continuous syncing – those `sync` commits are just the pipeline chugging along, pulling in new Q&A from the source site almost daily. We're getting a steady stream of new content, which is great.
+
+A key improvement was adding a filter to the sync process: `skip Q&A without a rabbi answer`. This was important because not all Q&A on the source site is relevant for our specific use case; we need to ensure the quality and authority of the content going into the knowledge base.
+
+The biggest technical win, though, was definitely integrating the Gemini Batch API. That `feat(gemini): add --batch mode` commit was a game-changer. We're talking about a 50% cost reduction for processing the Q&A, which is huge when you're dealing with potentially large volumes of text. It also means we can process things more efficiently.
+
+On the deployment front, I implemented a new `hash-gated zip mirror` to Google Drive for the knowledge base bundles. This makes deployments more robust and ensures that we're always deploying a consistent, versioned bundle. No more guessing if the latest version is actually the latest.
+
+Finally, a couple of smaller but important fixes: tidying up the `.gitignore` to keep temporary transcripts out of the repo, and a critical fix for the batch processing.
+
+The Gemini Batch API, while a huge win for cost, definitely threw some curveballs. Integrating it wasn't just a drop-in replacement. The asynchronous nature of batch processing meant dealing with polling, waiting, and making sure the process didn't just hang indefinitely. That `fix(batch): cap poll_batch wall-time at 24h` commit? That was a direct result of discovering that the batch process could just... sit there... forever. Debugging an async process that occasionally hangs for hours is not my idea of fun, but it taught me a lot about setting robust timeouts and error handling for external APIs.
+
+Also, the content filtering, while seemingly simple, highlighted the ongoing challenge of data quality. It's not enough to just pull data; you have to understand its nuances and apply business logic to ensure it's actually useful.
+
+Honestly, it feels good to see this pipeline mature. The cost savings from the batch API are a real win, and it's satisfying to know we're being more efficient. There were definitely moments of frustration, especially wrestling with the batch API's async behavior and that infinite hang bug. I felt a bit like I was chasing ghosts for a while there, trying to reproduce a hang that only happened intermittently. But squashing that bug felt like a real accomplishment. It reinforced the importance of defensive programming, especially when dealing with external services and long-running processes. I'm learning to anticipate more failure modes and build in safeguards from the start. It's a constant reminder that even "simple" integrations can hide complex challenges.
+
+Keep refining the data ingestion and processing, maybe explore more advanced content enrichment.
