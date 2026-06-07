@@ -1,0 +1,22 @@
+Raw dev notes -- RAG Eval & Sync: Taming the Data Beast
+
+**Project Background:**
+This RAG (Retrieval Augmented Generation) pipeline is essentially the brain for an internal AI assistant. Its core purpose is to ingest and organize information from specific internal sources, primarily a particular website, and make it instantly queryable by an LLM. The goal is to ensure our AI always has the most up-to-date and accurate knowledge to draw from, acting as a living, breathing knowledge base.
+
+**What was done in this period:**
+This past week was a mix of routine maintenance and significant infrastructure build-out. The bulk of the commits were around syncing new data – we pulled in a ton of new Q&A pairs and a few new posts from the target website. It's a constant feed, keeping the knowledge base fresh.
+
+A key improvement on the operational side was setting up a weekly CI job to watch an upstream Python library. This is crucial for staying ahead of potential breaking changes or new features in a dependency that's pretty central to our RAG setup.
+
+But the real heavy lifting was in establishing a robust evaluation infrastructure. I finally got a persistent system in place to run evaluations on our RAG pipeline. This means we can now consistently measure performance, track regressions, and actually *see* if our changes are making things better or worse. I ran six initial evaluation runs, which was a huge milestone, and documented the whole process.
+
+During these eval runs, I hit some snags, which led to implementing prompt-side mitigations. This was about trying to "coach" the LLM to handle less-than-perfect retrieved contexts more gracefully. I also made the evaluation runners more resilient by giving them longer timeouts and implementing auto-retry logic, because external services (and even our own internal ones sometimes) can be flaky.
+
+**What was hard or surprising:**
+Getting the evaluation infrastructure stable was a real grind. It's one thing to write a script that runs a few queries, but building a system that can reliably run hundreds or thousands of evaluations, persist the results, and handle various failure modes (like timeouts or API errors) is a whole different beast. I was surprised by how much effort went into just making the *evaluation process itself* robust. The prompt-side mitigations were also an interesting challenge – it felt less like traditional coding and more like trying to understand and influence the "thought process" of the LLM, which is a very different kind of debugging. It really highlighted how much of RAG development is about managing uncertainty and building resilience.
+
+**Personal reflection:**
+This week felt like a big step forward. For a while, we've been operating a bit in the dark, making changes and *hoping* they improved things. Now, with the persistent evaluation infrastructure, we have a flashlight. It's incredibly satisfying to finally have a concrete way to measure progress and identify areas for improvement. It reinforced for me that in AI/ML projects, the "M" (Machine Learning) part is often less about the fancy models and more about the robust data pipelines, evaluation frameworks, and operational stability. It also taught me a lot about building resilience into systems that interact with external, sometimes unpredictable, components. It's a reminder that software engineering principles are just as vital, if not more so, in the AI space.
+
+**What's next:**
+Analyze the initial evaluation results and start iterating on retrieval strategies.

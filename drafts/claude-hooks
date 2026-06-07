@@ -1,0 +1,21 @@
+Raw dev notes -- Hardening the Hooks: ZWSP and Canaries
+
+Okay, so this past week has been pretty intense, mostly focused on shoring up the defenses of the `claude-hooks` project. For anyone reading this later (or for my future self who's forgotten everything), this project is essentially a set of policy enforcement hooks that trigger at various points in our system. Think of it as a gatekeeper, making sure certain actions or content meet specific criteria before proceeding. It's critical for maintaining the integrity and security of the data flowing through.
+
+What I've been up to:
+
+The first big chunk of work was a bit of a cleanup and standardization effort. I went through and renamed a bunch of the existing hooks to follow a more consistent `<boundary>-<action>-<target>` pattern. This makes them way easier to understand at a glance – you know exactly *where* it's firing, *what* it's doing, and *what* it's acting on. While I was at it, I also mirrored some missing hooks, ensuring we had comprehensive coverage across all the necessary boundaries. It's one of those "boring but important" tasks that makes future development and debugging so much smoother.
+
+Then things got a bit more security-focused. We've been working on a `multi-block-secret` mechanism, and a key part of that is the "canary state" – basically, a tripwire to detect if sensitive data has been accessed improperly. I moved this canary state to the OS keyring. This is a huge win for security, as it means the canary is stored in a much more protected, system-level location, making it significantly harder for unauthorized processes to get at it. Alongside that, I added logging for the `session_id` whenever these secrets are accessed. This is crucial for auditing; if something ever goes wrong, we'll have a clear trail of who accessed what and when.
+
+The most eye-opening part of the week, though, came from a stress test we ran. Turns out, there was a sneaky ZWSP (Zero-Width Space) bypass lurking in our content filtering. This was a real "facepalm" moment – an invisible character being used to completely sidestep our checks. It's a classic trick, but it still caught us off guard. Patching that was a priority. We also found some patterns around how sensitive files were being opened during the stress test, so I refactored that to inline the `open()` calls, making them more explicit and controlled, reducing potential exposure.
+
+What was hard or surprising:
+
+The ZWSP bypass was definitely the biggest surprise. You think you've covered all your bases, and then an invisible character just waltzes right through. It's a stark reminder that attackers are always looking for the most obscure edge cases. It made me realize how much more robust our sanitization and validation needs to be, not just for visible characters but for *everything*. The stress test itself was hard, pushing the system to its limits and revealing these hidden weaknesses. It's never fun to find vulnerabilities, but it's always better to find them ourselves.
+
+Personal reflection:
+
+This week felt like a real growth spurt in terms of security awareness. It's one thing to read about these kinds of bypasses, but another to actually find and fix one in your own code. It was a bit humbling, honestly, to realize we had such a blind spot. But it also felt incredibly satisfying to close those gaps. It reinforces the idea that security isn't a one-time thing; it's an ongoing process of testing, learning, and hardening. I feel like I've leveled up my defensive coding skills a bit.
+
+What's next: More robust input validation and continued stress testing.
