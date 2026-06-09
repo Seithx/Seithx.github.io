@@ -1,21 +1,22 @@
-Raw dev notes -- RAG Pipeline: Batching, Bundles, and Battling the Hang
+Raw dev notes -- RAG Eval & Sync: Taming the Data Beast
 
-Okay, so this project is all about building out a robust RAG (Retrieval Augmented Generation) knowledge base. The core idea is to take existing Q&A content from a specific website, process it, and then make it available for an AI system to use. Think of it as creating a super-smart, always-updated FAQ bot, but with actual AI smarts behind it. It's crucial for providing accurate, up-to-date answers based on a trusted source.
+**Project Background:**
+This RAG (Retrieval Augmented Generation) pipeline is essentially the brain for an internal AI assistant. Its core purpose is to ingest and organize information from specific internal sources, primarily a particular website, and make it instantly queryable by an LLM. The goal is to ensure our AI always has the most up-to-date and accurate knowledge to draw from, acting as a living, breathing knowledge base.
 
-This past week or so has been a pretty solid sprint on the RAG pipeline. The most visible thing is the continuous syncing – those `sync` commits are just the pipeline chugging along, pulling in new Q&A from the source site almost daily. We're getting a steady stream of new content, which is great.
+**What was done in this period:**
+This past week was a mix of routine maintenance and significant infrastructure build-out. The bulk of the commits were around syncing new data – we pulled in a ton of new Q&A pairs and a few new posts from the target website. It's a constant feed, keeping the knowledge base fresh.
 
-A key improvement was adding a filter to the sync process: `skip Q&A without a rabbi answer`. This was important because not all Q&A on the source site is relevant for our specific use case; we need to ensure the quality and authority of the content going into the knowledge base.
+A key improvement on the operational side was setting up a weekly CI job to watch an upstream Python library. This is crucial for staying ahead of potential breaking changes or new features in a dependency that's pretty central to our RAG setup.
 
-The biggest technical win, though, was definitely integrating the Gemini Batch API. That `feat(gemini): add --batch mode` commit was a game-changer. We're talking about a 50% cost reduction for processing the Q&A, which is huge when you're dealing with potentially large volumes of text. It also means we can process things more efficiently.
+But the real heavy lifting was in establishing a robust evaluation infrastructure. I finally got a persistent system in place to run evaluations on our RAG pipeline. This means we can now consistently measure performance, track regressions, and actually *see* if our changes are making things better or worse. I ran six initial evaluation runs, which was a huge milestone, and documented the whole process.
 
-On the deployment front, I implemented a new `hash-gated zip mirror` to Google Drive for the knowledge base bundles. This makes deployments more robust and ensures that we're always deploying a consistent, versioned bundle. No more guessing if the latest version is actually the latest.
+During these eval runs, I hit some snags, which led to implementing prompt-side mitigations. This was about trying to "coach" the LLM to handle less-than-perfect retrieved contexts more gracefully. I also made the evaluation runners more resilient by giving them longer timeouts and implementing auto-retry logic, because external services (and even our own internal ones sometimes) can be flaky.
 
-Finally, a couple of smaller but important fixes: tidying up the `.gitignore` to keep temporary transcripts out of the repo, and a critical fix for the batch processing.
+**What was hard or surprising:**
+Getting the evaluation infrastructure stable was a real grind. It's one thing to write a script that runs a few queries, but building a system that can reliably run hundreds or thousands of evaluations, persist the results, and handle various failure modes (like timeouts or API errors) is a whole different beast. I was surprised by how much effort went into just making the *evaluation process itself* robust. The prompt-side mitigations were also an interesting challenge – it felt less like traditional coding and more like trying to understand and influence the "thought process" of the LLM, which is a very different kind of debugging. It really highlighted how much of RAG development is about managing uncertainty and building resilience.
 
-The Gemini Batch API, while a huge win for cost, definitely threw some curveballs. Integrating it wasn't just a drop-in replacement. The asynchronous nature of batch processing meant dealing with polling, waiting, and making sure the process didn't just hang indefinitely. That `fix(batch): cap poll_batch wall-time at 24h` commit? That was a direct result of discovering that the batch process could just... sit there... forever. Debugging an async process that occasionally hangs for hours is not my idea of fun, but it taught me a lot about setting robust timeouts and error handling for external APIs.
+**Personal reflection:**
+This week felt like a big step forward. For a while, we've been operating a bit in the dark, making changes and *hoping* they improved things. Now, with the persistent evaluation infrastructure, we have a flashlight. It's incredibly satisfying to finally have a concrete way to measure progress and identify areas for improvement. It reinforced for me that in AI/ML projects, the "M" (Machine Learning) part is often less about the fancy models and more about the robust data pipelines, evaluation frameworks, and operational stability. It also taught me a lot about building resilience into systems that interact with external, sometimes unpredictable, components. It's a reminder that software engineering principles are just as vital, if not more so, in the AI space.
 
-Also, the content filtering, while seemingly simple, highlighted the ongoing challenge of data quality. It's not enough to just pull data; you have to understand its nuances and apply business logic to ensure it's actually useful.
-
-Honestly, it feels good to see this pipeline mature. The cost savings from the batch API are a real win, and it's satisfying to know we're being more efficient. There were definitely moments of frustration, especially wrestling with the batch API's async behavior and that infinite hang bug. I felt a bit like I was chasing ghosts for a while there, trying to reproduce a hang that only happened intermittently. But squashing that bug felt like a real accomplishment. It reinforced the importance of defensive programming, especially when dealing with external services and long-running processes. I'm learning to anticipate more failure modes and build in safeguards from the start. It's a constant reminder that even "simple" integrations can hide complex challenges.
-
-Keep refining the data ingestion and processing, maybe explore more advanced content enrichment.
+**What's next:**
+Analyze the initial evaluation results and start iterating on retrieval strategies.
