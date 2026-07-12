@@ -1,0 +1,22 @@
+Raw dev notes -- Battling Bots and Building Resilience: My Browser Automation Journey
+
+**Project Background:**
+This project is an API wrapper around a browser automation tool. The core idea is to provide a robust, reliable service that can perform automated tasks within a browser, specifically interacting with Google services like notebooks. It's designed to run unattended, acting as a backend service for other applications that need to automate browser interactions without having to manage the browser directly.
+
+**What was done in this period:**
+This past week has been a deep dive into making the automation truly resilient and self-healing, especially around authentication. The biggest chunk of work was building out a comprehensive self-healing authentication system. I implemented logic to automatically detect when a session gets logged out and re-authenticate without popping up browser windows everywhere, which was a huge win for unattended operation. This involved persisting rotated cookies and setting up a 20-minute keep-alive default to proactively refresh sessions. A key part of this was figuring out how to do a "hidden-headed" re-login that could clear Google's anti-bot gates – that was a tricky one. I also fixed an issue where re-authentication would fail on a fresh profile, which was a nasty bug to track down.
+
+Beyond just re-auth, I built a full-blown session watchdog. This thing supervises the entire wrapper, and if it detects a session lapse, it triggers the auto re-authentication. To make it robust, I added a debounce mechanism, requiring two consecutive unhealthy checks before initiating recovery, preventing flaky network issues from causing unnecessary re-logins. I also implemented a singleton lock using a loopback port, so only one instance of the watchdog ever runs, which is crucial for stability. It now uses an HTTP-health-first check and writes a heartbeat file, making its status visible.
+
+On the operational side, I created a portable daemon launcher and an installer for Task Scheduler, making it much easier to deploy and run this thing as a background service. Documentation got some love too, clarifying that each user needs their own Google account and notebook IDs, and I even wrote a `FAILOVER.md` runbook for manually swapping Google accounts in case of a catastrophic lockout – hopefully, we never need it, but it's there.
+
+Finally, I added some monitoring hooks: exposing the underlying automation tool's version via a GET endpoint for external drift monitoring, and porting to a newer version of the core library (`***-py 0.7.3`). I also set up CI to daily watch for upstream changes in `***-py` and create a GitHub issue (with email/Pushover notifications) if there's a new version, so we can stay on top of updates.
+
+**What was hard or surprising:**
+Google's anti-bot measures are no joke. Getting that "hidden-headed re-login" to work consistently felt like a mini-boss battle. It's a constant cat-and-mouse game trying to make automated browsers look human enough. The complexity of the watchdog also surprised me – it's not just about detecting failure, but about *reliably* detecting failure, preventing race conditions, and ensuring only one recovery process kicks off. The singleton lock was a good solution there. Also, the fact that even with all this self-healing, we still need a manual failover plan for account lockouts is a stark reminder that you can't automate away *all* the problems, especially when dealing with external services. It's a humbling thought.
+
+**Personal Reflection:**
+This period felt like I was really leveling up my resilience engineering skills. It's one thing to get a browser to do something once; it's another entirely to make it do that thing reliably, 24/7, in the face of network glitches, session expirations, and external anti-bot systems. There's a deep satisfaction in building something that can pick itself up when it falls. It felt like I was building a little digital organism that could heal itself. It's a good reminder that software isn't just about features, but about robustness and maintainability, especially for unattended services. It also reinforced the value of good operational tooling and documentation – making it easy to deploy and recover is just as important as the core functionality.
+
+**What's next:**
+Further refine the `***-py` integration and explore more proactive health checks for the watchdog.

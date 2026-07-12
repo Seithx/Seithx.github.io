@@ -1,0 +1,32 @@
+Raw dev notes -- WhatsApp Bot: From Zero to (Almost) Hero
+
+**Project Background:**
+Okay, so the big idea here was to take our internal RAG (Retrieval Augmented Generation) system, which is super powerful for knowledge retrieval, and make it accessible to users via WhatsApp. We're using a system I'm calling "Kapso" for the WhatsApp integration layer. Basically, it's a bridge: WhatsApp -> Kapso -> RAG -> Kapso -> WhatsApp. The goal is to provide quick, conversational access to our knowledge base.
+
+**What was done:**
+This past week was a whirlwind of getting the core bot up and running and then hardening it like crazy. I kicked it off with the initial commit, just getting the basic Kapso-to-RAG flow working. Immediately, I had to tackle things like handling audio messages (referring them to "Eliezer" for now, since the RAG isn't set up for audio input directly yet), and making sure new users got a friendly welcome message – but only once, ever, per user. That "once per user forever" was a small but important UX detail.
+
+Then came the real grind of making it feel like a proper conversation. I added read receipts and a typing indicator, which sounds simple but makes a huge difference. Had to fix the typing indicator to show *after* the initial "ack" message, otherwise it'd just get cleared immediately, which looked janky.
+
+A lot of effort went into robustness and user experience. I implemented a 3900-character cap on messages (WhatsApp limit, naturally), and crucial per-user serialization to prevent conversations from getting tangled. Imagine two messages from the same user arriving out of order – chaos! I also added a `/reset` command, which is a lifesaver for clearing context.
+
+To keep users engaged during longer RAG queries, I built out these "wait-fillers" – rotating messages with fun facts or openers, styled nicely with bold and italics for WhatsApp. This was a fun little creative break.
+
+Error handling became a big focus. I started logging Kapso send failures (especially those annoying 429 rate limits) instead of just silently dropping them. Also, made sure to log when messages failed to send. A critical fix was ensuring the RAG's `[1][2]` citation markers weren't stripped out; losing those meant losing all grounding for the answers, which defeats the purpose of RAG. I also added a "queued-ack" for when a user sends a follow-up before the previous answer is done, which helps manage expectations.
+
+Finally, I spent a good chunk of time on monitoring. Set up a wrapper health monitor with a liveness probe, a daily "DOM-drift canary" (more on that in a sec), and Pushover alerts. Also added an alert for `***-py` version drift, because dependency hell is real. And some free wins with Kapso number-health monitoring.
+
+**What was hard or surprising:**
+Honestly, the sheer number of small, fiddly details required to make a messaging bot feel *good* and *reliable* was surprising. The WhatsApp character limit, the specific order of typing indicators and acks, handling media redirects – each one was a mini-puzzle.
+
+The "DOM-drift canary" for the health monitor was a direct response to the Kapso integration being a bit brittle. It's essentially a web-based wrapper, and if their UI changes, my bot breaks. So, the canary checks if key elements are still where they should be. It feels a bit like duct-taping a rocket, but it's necessary for now.
+
+Losing the RAG citations was a facepalm moment. It was a subtle bug where my processing was stripping them, and it took a bit to realize why the answers felt less trustworthy. Fixing that immediately improved the quality.
+
+Also, dealing with Kapso's specific sending mechanisms, like "BSUID-safe sends" and buffered batch handling, added layers of complexity I hadn't fully anticipated. And the 429 rate limits are always a pain, requiring careful logging and potentially backoff strategies. Getting the bot to persist across reboots with a logon-task launcher was also a small but necessary hurdle.
+
+**Personal reflection:**
+This past week felt like a sprint. There were moments of pure flow, just cranking out features and fixes, and then moments of head-scratching frustration trying to debug why a typing indicator wasn't showing up or why messages were silently failing. It's a good reminder that building robust, user-facing systems isn't just about the core logic; it's about anticipating every possible failure mode and edge case, and then making the user experience as smooth as possible despite all that complexity under the hood. I feel like I've leveled up my "defensive programming" skills and my understanding of what it takes to run a production-grade bot. It's satisfying to see something so functional come together so quickly.
+
+**What's next:**
+Next up: exploring more advanced conversational flows and potentially integrating more RAG sources.
