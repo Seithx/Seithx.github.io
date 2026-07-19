@@ -1,0 +1,25 @@
+Raw dev notes -- "The Week of Outages and AI Digests"
+
+Okay, so this "Personal Information Hub" project is basically my attempt to build a hyper-personalized, self-healing digital assistant. It's meant to aggregate all sorts of info – reminders, news, AI research digests – and deliver it to me proactively, mostly through Pushover notifications. The goal is to offload some mental overhead and keep me informed without me having to actively seek everything out. It's all self-hosted, running on a mini-PC, mostly in Docker/WSL2.
+
+This past week was a bit of a rollercoaster. The big theme was definitely *reliability* and *resilience*, largely triggered by a nasty outage.
+
+First, I finally got around to actually disabling Modern Standby. That thing is a nightmare for always-on systems, causing random hangs. Paired that with a watchdog hang-recovery mechanism. Then, the heartbeat checks for the main system were totally broken – they were repeating indefinitely and not actually checking for *real* success. Fixed that to be a proper success/failure check.
+
+The biggest headache was a `***` service outage. My client for it was suddenly getting 405 "client-outdated" errors, which meant my daily digest and other integrations just stopped working. This led to a flurry of fixes:
+1.  Upgraded the `***` client library to the latest version, which fixed the 405.
+2.  Implemented a daily version check for `***` to proactively detect if my client is outdated *before* it breaks. This would have saved me a lot of grief.
+3.  Throttled the host watchdog Pushover notifications from every 10 minutes to once an hour. Getting spammed during an outage just adds insult to injury.
+4.  Started thinking about `***` auto-upgrades, but with an LLM gate. I want it to read the release notes and only upgrade if there are no major red flags. This is still a work in progress, tracking flagged issues.
+
+Beyond the `***` drama, I spent a lot of time on general system resilience. I got `***` to boot-start properly using S4U (Service for User) so it survives reboots. Docker auto-recovery was another beast: the watchdog now triggers an elevated user-session launch, essentially automating "run as admin" for Docker Desktop if it crashes. Turns out, my previous Docker launcher was killing Docker after 5 minutes because of an `ExecutionTimeLimit` setting – facepalm moment, fixed that to 0. Also added weekly, threshold-gated WSL2 disk compaction, because those VHDXs can get huge.
+
+On the content front, I finally integrated "Two Minute Papers" into my daily AI-research digest. It now pulls the RSS, gets the transcript, and uses Gemini to summarize it. Had a minor hiccup with the seen-state path in the Docker container, but that was a quick fix.
+
+**Hard/Surprising:**
+The `***` 405 outage was a real kick in the teeth. It highlighted how fragile these integrations can be and how important proactive monitoring (like the daily version check) is. The Docker auto-recovery and `ExecutionTimeLimit` bug was super frustrating to debug – why was it dying after 5 minutes?! The Windows Task Scheduler and S4U stuff is always a bit of a dark art, but getting it to reliably boot-start was a win.
+
+**Personal Reflection:**
+Honestly, this week felt like a lot of firefighting. It's frustrating when core parts of your "always-on" system go down, especially when it's due to external service changes. But it also felt incredibly satisfying to build out these layers of resilience and automation. Every time something broke, I learned a new way to make the system more robust. It's a constant reminder that building reliable systems isn't just about features, it's about anticipating failure and building self-healing mechanisms. I'm getting better at not just fixing the immediate bug, but asking "how can I prevent this class of bug from happening again?"
+
+**What's next:** BlueTTS integration for voice replies and further Docker/WSL2 maintenance.
