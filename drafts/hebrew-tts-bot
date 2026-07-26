@@ -1,0 +1,28 @@
+Raw dev notes -- From WhatsApp to Telegram: Proxying, Privacy, and Pushing the Limits
+
+**Project & Why:**
+This project is a Hebrew Text-to-Speech (TTS) bot, initially built for WhatsApp. The goal is to provide an easy way for people to get Hebrew audio from text, which isn't always readily available or high quality from standard services. It's a personal project, driven by a need for good Hebrew TTS.
+
+**What was done in this period:**
+This past week has been a whirlwind! I started by getting the initial WhatsApp bot imported and set up with a deploy script. A big early win was optimizing the OGG re-encoding to save some cycles and routing requests by capacity – trying to hit a cheaper provider first (Hugging Face) and only overflowing to a more expensive one (RunPod) when needed. This was all about cost efficiency from the get-go.
+
+Then came a massive push on hardening and testing. I added guards against duplicate webhooks and poison pills, fixed some tricky ordering issues in the reconciler, and spent a lot of time measuring performance, concurrency, and GPU costs. I did a *ton* of load testing, pushing it to 359 jobs with no drift, really trying to understand its limits and where throttling became the ceiling. This was crucial for stability.
+
+The biggest new feature was adding Telegram support. This involved planning the integration, adding a channel seam, implementing the Telegram transport, and wiring it through the existing handler. But that wasn't straightforward at all. I hit a major roadblock where Hugging Face datacenter IPs were being blocked by Telegram for outgoing messages. This led to a scramble to implement proxying – first through a Cloudflare Worker, and then even needing a Deno Deploy proxy because Cloudflare itself was getting blocked by Telegram from HF's IPs. What a headache! But eventually, I got Telegram live, albeit with a few remaining gaps.
+
+On the administrative side, I spent a surprising amount of time on privacy. I drafted a detailed privacy policy, aligning it with best practices (using another service's policy as a reference point for structure and content, without copying specifics). This included defining data retention, operator details, and contact info. I also revamped the usage statistics logging from SQLite to append-only JSONL files, splitting them by channel for better scalability and bucket-mount safety. Welcome messages were unified across channels too.
+
+Finally, I circled back to hardening against abuse and cost overruns. I did a docs audit to identify gaps and then built out a load-test harness specifically for abuse scenarios, running dual-channel stress tests to really push the system and ensure it wouldn't break or cost a fortune if someone tried to misuse it.
+
+**What was hard or surprising:**
+The absolute hardest part was the Telegram blocking issue. I never expected to have to implement a multi-layered proxy solution just to send messages from a bot hosted on a major cloud provider. It felt like playing whack-a-mole with network blocks. Diagnosing that was a real time sink and super frustrating.
+
+Another surprising amount of effort went into the privacy policy. It's not just a quick boilerplate; thinking through data retention, what's logged, and how to be truly transparent took a lot more brainpower than I anticipated. It's easy to just code, but the operational and legal aspects are a whole different beast.
+
+The sheer volume of load testing and performance tuning was also more involved than I initially thought. Getting to "359 jobs, no drift, throttling is the ceiling" wasn't a trivial exercise; it required careful measurement and iteration.
+
+**Personal reflection:**
+This week felt like a real level-up in terms of operational thinking. I started with just wanting to make a bot, but I ended up wrestling with network infrastructure, scaling challenges, cost management, and even legal/privacy considerations. The frustration with the Telegram blocking was real, but pushing through it and finding a solution (even if it felt a bit hacky with multiple proxies) was incredibly satisfying. It taught me that sometimes the biggest challenges aren't in the code itself, but in the environment it runs in. It also reinforced the importance of robust testing, not just for functionality but for performance, cost, and abuse prevention. I feel like I'm growing beyond just a coder into someone who can really think about the full lifecycle of a public-facing service.
+
+**What's next:**
+Refine the Telegram integration and continue monitoring for abuse vectors.
