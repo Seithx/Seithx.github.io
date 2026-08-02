@@ -1,0 +1,15 @@
+Raw dev notes -- Tackling the Ghost in the Machine: Citation Ambiguity and Deployment Woes
+
+Alright, another week, another dive into the RAG Knowledge Base Pipeline. This project is essentially our brain for the AI – it pulls in all our internal documentation, Q&A, and posts from our internal source, processes it, and makes it available for our RAG system to generate accurate, context-rich answers. The whole point is to make sure our AI isn't just hallucinating, but actually citing real, verifiable sources.
+
+This past week was dominated by what we called "Issue #15," which turned out to be a real head-scratcher. The core problem was citation ambiguity. Imagine you have two different documents, but they somehow ended up with the exact same title in our system. When the RAG system tried to cite one, it might accidentally point to the other, or just get confused. My initial thought was it was a broad "cross-title slip" problem, but after digging in, I realized the immediate, addressable scope was "same-title hygiene" – specifically, when documents *should* be distinct but weren't. We're talking about 2,998 documents with identical titles, and a staggering 31,000 exchanges where this name ambiguity could cause issues. Yikes.
+
+The solution I landed on was to implement a `slug-suffix source-ref` for citations. Basically, if two documents have the same title, we append a unique slug (like a short, URL-friendly ID) to the citation reference. This makes each citation traceable and unambiguous, even if the titles are identical. It felt like a solid, surgical fix for the immediate problem.
+
+But man, getting it out the door was a journey. The first deploy was a "half-applied" mess, which is always fun. It highlighted a gap in my deployment process – I needed better guardrails. So, I quickly added a pre-deploy build canary and a single rebuild command to prevent those partial deploys from happening again. Lesson learned: never assume your deploy process is foolproof.
+
+The weirdest part was the "slip flip" after deployment. Before the fix, we had 3 out of 3 test cases failing due to ambiguity. After the fix, suddenly 6 out of 6 were passing perfectly. It was great, but also a bit unsettling because the "cause unisolated" part of me was screaming. Why did it go from 3/3 wrong to 6/6 right? Was there some interaction I didn't fully grasp? It's a win, but a slightly mysterious one. Still, I documented the whole process, including the deploy guardrails and the live verification battery, even verifying the citations on our WhatsApp channel.
+
+Honestly, this whole thing felt like a proper detective story. Defining the problem precisely, realizing its scale, crafting a solution, battling deployment gremlins, and then seeing it work (mostly) as intended. It's a good reminder that sometimes the most impactful work isn't adding a shiny new feature, but shoring up the foundations and ensuring data integrity. It felt good to finally mark Issue #15 as DONE.
+
+Next up: Keep the data flowing with those daily syncs, and maybe revisit that broader "cross-title slip" if it becomes a bigger problem.

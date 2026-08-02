@@ -1,0 +1,15 @@
+Raw dev notes -- Leveling Up the Automation Game: Secrets & Logs
+
+Okay, so this project is basically my personal browser automation API wrapper. The whole point of it is to interact with various websites programmatically, mostly for data collection or automating some tedious tasks. It's been a bit of a beast, constantly battling against anti-bot measures, which is where a lot of the headaches come from.
+
+This past week, or rather, this recent batch of commits, was less about adding flashy new automation features and more about shoring up the foundations. The big wins were definitely around security and observability.
+
+First up, secrets management. I finally got around to moving all the sensitive stuff – API keys, login credentials, etc. – out of plain old `.env` files and into the Windows Credential Manager using `keyring`. This was a huge relief. I've always hated having secrets sitting in plaintext, even if it's just on my dev machine. The thought of accidentally committing an `.env` file, even to a private repo, always gave me a minor panic attack. So, getting that integrated and merged (`keyring-secrets` PR) feels like a proper adulting moment for the project. It's a small thing, but it significantly improves the security posture and just makes me feel better about handling sensitive data.
+
+The other major piece was implementing a more `unified-logging` system. Before, logging was a bit all over the place – some print statements, some basic `logging` module calls, but no real consistency. Now, it's much more structured, which is going to be a lifesaver for debugging. When you're dealing with flaky browser automation, having clear, consistent logs is absolutely essential for figuring out *why* something broke, especially when it's a subtle anti-bot detection.
+
+What was hard? Honestly, the constant shadow of the anti-bot flakiness. Even though I wasn't directly tackling it in these commits, the `TODO` for `nodriver` is a stark reminder. We're still seeing about 52% flakiness when running headless, which is just brutal. It's a constant cat-and-mouse game, and it's frustrating to know that even with all these foundational improvements, the core challenge of reliable automation against sophisticated defenses is still looming large. Getting `keyring` set up wasn't entirely trivial either; there are always little quirks when integrating with OS-specific credential stores. And making logging truly "unified" without being overly verbose or missing critical info took a bit of thought.
+
+Personally, it feels good to tackle these "boring but important" tasks. It's easy to get caught up in building new features, but improving the underlying architecture, security, and debuggability makes the whole project more robust and sustainable. It's a reminder that sometimes the most impactful work isn't the most glamorous. It felt like I was finally giving the project the care it deserves, rather than just duct-taping new features on top. Learning about `keyring` was also a neat little dive into OS-level credential management.
+
+Next up: Diving into `nodriver` to try and beat that 52% headless flakiness.

@@ -1,0 +1,51 @@
+Raw dev notes -- The Bot That Wouldn't Break (Or, My Week of Resilience Engineering)
+
+Okay, so this past week has been a wild ride with the `hebrew-tts-bot`. For anyone new here, this project is basically a bot that takes Hebrew text and turns it into speech, primarily for a specific community. It integrates with Kapso (our WhatsApp API provider) and also has a Telegram interface. The goal is to make it super reliable and easy to use for generating voice notes.
+
+**What I've been up to:**
+
+This week was all about hardening, resilience, and making sure this bot can take a beating and keep on ticking.
+
+1.  **Mass-Forward Mayhem & Latency Slaying:** A huge chunk of my time went into fixing issues that popped up when users would mass-forward messages to the bot. Initially, this led to late audio, errors, and even out-of-order replies. I implemented a bunch of stuff:
+    *   **Pacing and Retries:** To handle Kapso's rate limits and ensure messages actually go through.
+    *   **Parallel Synthesis, Ordered Send:** This was a big win. Now, the bot can generate multiple voice notes at once, but still send them in the correct order, drastically cutting down latency for bursts of messages.
+    *   **Smart Acks:** Instead of quoting every single message in a mass-forward, it now sends one concise ack per burst, quoting only the first message. Much cleaner.
+
+2.  **Reconciliation & Deduplication:** This was a beast. The bot was sometimes re-answering messages, especially after restarts or outages.
+    *   I built a robust reconciler that skips messages already delivered or even "in-flight."
+    *   Crucially, I made the `answered-set` (which tracks what's been processed) persistent to disk (`/data`) so restarts don't cause duplicate voice notes. This was a lifesaver.
+    *   For Kapso, I leveraged their `since-API` to backfill messages after an outage, ensuring no messages are lost. Telegram was trickier since it has no history API, so I had to build a persistent inbound queue for it too.
+    *   Fixed a subtle bug where Telegram's `message_id` is per-chat, not global, which was causing messages from different users to be dropped by the dedup logic. Ouch.
+
+3.  **Monitoring & Self-Healing:**
+    *   Set up a comprehensive monitoring system using GitHub Actions to check Kapso's status and watch for deprecations (like the Gemini one).
+    *   Alerts now go to Telegram (Max's preference) with email as a fallback.
+    *   Added a "dead-man's-switch" and on-failure notifications, so I know if the monitor itself fails.
+    *   Implemented a webhook self-heal: if Kapso auto-pauses our webhook after an outage, the bot will re-enable it on startup.
+    *   Also added watchers for WhatsApp template approvals and specific PRs.
+
+4.  **Abuse & Hardening:**
+    *   I spent time documenting stress and abuse testing, and even built an "adversarial attack harness" to simulate bad input.
+    *   Added guards for malformed input (non-dict context/reaction) – apparently, this is a common attack vector.
+    *   Implemented rate-limiting with honest feedback: if you hit the limit, the bot tells you exactly how long to wait.
+    *   Even added request-level webhook tests for auth, size, and routing.
+
+5.  **Admin & Deployment:**
+    *   Created a guarded admin endpoint to submit maintenance templates via the bot's runtime.
+    *   Drafted a privacy policy.
+    *   Fixed some annoying `Dockerfile COPY` and `deploy.py` sync issues.
+
+**What was hard or surprising:**
+
+The sheer complexity of distributed systems and external APIs never ceases to amaze me. The mass-forward issues were a real head-scratcher, requiring a multi-pronged approach to solve latency and ordering. The reconciliation logic, especially making it restart-proof and handling the different API capabilities of Kapso and Telegram, felt like building a small, resilient database.
+
+The Telegram `message_id` bug was a classic "read the docs carefully" moment – I assumed global IDs, but they're chat-specific, leading to a nasty dedup bug. Also, realizing GitHub Actions cron jobs aren't super precise meant widening my monitor's `MAX_AGE_MIN` to avoid false positives.
+
+The need for "adversarial attack" testing was a bit sobering. It's a reminder that once something is out there, people will try to break it or use it in unexpected ways. It's a good lesson in defensive programming.
+
+**Personal Reflection:**
+
+This week felt like a deep dive into the trenches of reliability engineering. It wasn't about flashy new features, but about making the existing ones rock-solid. There were moments of frustration, especially when chasing down subtle race conditions or platform-specific quirks. But there's a deep satisfaction in seeing the bot handle heavy load, recover from outages, and gracefully reject abuse. It feels like the project has matured significantly, moving from "it works" to "it works, reliably, under pressure." It's a testament to how much you learn when you push a system to its limits and then build the defenses.
+
+**What's next:**
+Probably more monitoring, maybe some user feedback loops, and definitely keeping an eye on those Kapso/Gemini deprecations.

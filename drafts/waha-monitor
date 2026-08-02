@@ -1,0 +1,28 @@
+Raw dev notes -- Building a more resilient brain-dump system
+
+**Project Background:**
+The "Personal Information Hub" is my ongoing side project, essentially a digital brain-dump and summarizer. Its main goal is to pull in all the disparate information I consume daily – articles, notes, random thoughts – and use AI to distill it into coherent, digestible summaries, or "digests," so I don't get overwhelmed. It's my personal attempt to fight information overload and make sense of my digital life.
+
+**What was done in this period:**
+This past week was a bit of a deep dive into making the digest generation more robust and reliable.
+
+First up, I had to deal with an external dependency change. The preview AI model I was using for the digest generation (the one that actually does the summarizing) got shut down back in May. Classic. So, the first commit was swapping that out for `gemini-3.1-flash-lite`. It wasn't a huge code change, but it's always a reminder that external APIs are a moving target and you can't get too comfortable.
+
+Then, I implemented a "digest circuit breaker." This was a big one for system resilience. The idea is that if the digest generation process fails `N` times in a row, I want to be notified *once* via email, and then the system should mute any further alerts and stop retrying for a set period. This prevents me from getting spammed with failure notifications and also stops the system from hammering the AI API if something is fundamentally broken. It's about failing gracefully and not making things worse.
+
+I also squashed a pretty annoying bug. During startup, if the system was trying to catch up on any missed digests from previous hours, it had a nasty habit of sometimes forwarding *empty* digests to my various groups (where I consume these summaries). Super unhelpful. I added a guard to prevent any digest from being forwarded if it's empty, which should stop that particular annoyance.
+
+Finally, I did a bit of refactoring and unification. The logic for generating digests was a little scattered, so I pulled it all into one single, guarded function. As part of that, I also added an hourly "yesterday-recovery" mechanism. This means if, for some reason, a digest for the previous day was missed entirely, the system will try to generate it again on the next hourly run. It's another layer of defense against data loss.
+
+**What was hard or surprising:**
+The model deprecation was just... annoying. It's a constant battle to keep up with API changes, and it always feels like a minor setback when you have to drop what you're doing to update a dependency.
+
+The circuit breaker logic was trickier to get right than I initially thought. Defining "N failures," ensuring the "email once" part, and correctly muting *both* alerts and retries without introducing new failure modes took some careful thought and testing. It's easy to over-engineer or under-engineer these kinds of reliability features.
+
+The empty digest bug was a classic "edge case during startup" scenario. It's those little things that make you realize how many assumptions you make when writing code, and how important defensive programming is, especially when dealing with asynchronous processes and external data.
+
+**Personal Reflection:**
+This whole period felt like a deep dive into system resilience and defensive programming. From dealing with external API instability to building internal safeguards like the circuit breaker and empty-digest guards, it's all about making the system robust. It's a good reminder that software isn't just about adding features; it's fundamentally about reliability and handling failure gracefully. I'm definitely getting better at anticipating failure modes, which feels like a significant area of growth for me. There's a quiet satisfaction in fixing these kinds of bugs and making the system more dependable, even if it's not the flashiest work.
+
+**What's next:**
+Next up: improving the content filtering and source management for the digest.
